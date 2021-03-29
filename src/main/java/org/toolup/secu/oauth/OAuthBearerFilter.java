@@ -26,11 +26,18 @@ import org.toolup.secu.oauth.jwt.JWTBuilderFactory;
 
 public final class OAuthBearerFilter implements Filter {
 	private static Logger logger = LoggerFactory.getLogger(OAuthBearerFilter.class);
-	
+
 	private static final String BEARER_PREFIX = "Bearer ";
+
+	private JWTBuilderFactory jwtBuilder;
+
+	public OAuthBearerFilter() throws OAuthException {
+		initJWTBuilder();
+	}
+
 	@Override
 	public void destroy() {}
-	
+
 	@Override
 	public void doFilter(final ServletRequest req, final ServletResponse resp, final FilterChain chain)
 			throws IOException, ServletException {
@@ -42,8 +49,8 @@ public final class OAuthBearerFilter implements Filter {
 			logger.debug("parsing authorization header {}", header);
 			if ((header == null) || (!header.startsWith(BEARER_PREFIX)))
 				throw new OAuthException(String.format("missing Bearer token. make sure it is of the form '%s{{bearer}}'", BEARER_PREFIX));
-			
-			JWT jwt = JWTBuilderFactory.newInstance().build(header.substring(BEARER_PREFIX.length()));
+
+			JWT jwt = jwtBuilder.build(header.substring(BEARER_PREFIX.length()));
 			((HttpServletRequest) req).setAttribute(JWT.REQ_ATTRBT, jwt);
 
 			/*
@@ -53,7 +60,7 @@ public final class OAuthBearerFilter implements Filter {
 			 */
 			Collection<String> roles = Stream.concat(jwt.getRoles().stream(), Stream.of(jwt.getScope())).collect(Collectors.toList());
 			Collection<GrantedAuthority> authorities = AuthorityUtils.createAuthorityList(roles.toArray(new String[roles.size()]));
-			
+
 			SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(new User(jwt.getSubject(), "", authorities), "", authorities));
 		} catch (OAuthException e) {
 			logger.error("{}", e);
@@ -64,7 +71,31 @@ public final class OAuthBearerFilter implements Filter {
 		}
 		chain.doFilter(req, resp);
 	}
-	
+
 	@Override
-	public void init(final FilterConfig filterConfig) throws ServletException {}
+	public void init(final FilterConfig filterConfig) throws ServletException {
+		try {
+			initJWTBuilder();
+		} catch (OAuthException e) {
+			throw new ServletException("", e);
+		}
+	}
+
+	private void initJWTBuilder() throws OAuthException {
+		if(jwtBuilder == null) {
+			try {
+				jwtBuilder = JWTBuilderFactory.newInstance();
+			} catch (OAuthException e) {
+				throw new OAuthException("Error initializing JWT Builder : newInstance bug.", e, 500);
+			}	
+		}
+
+		try {
+			if(jwtBuilder.getPublicKeys().isEmpty() && jwtBuilder.getDefaultPublicKey() == null)
+				throw new OAuthException("Error initializing JWTBuilderFactory : keys were  empty", 500);
+		} catch (OAuthException e) {
+			throw new OAuthException("Error initializing JWT Builder : keys could not be retrieved", e, 500);
+		}		
+	}
+
 }
