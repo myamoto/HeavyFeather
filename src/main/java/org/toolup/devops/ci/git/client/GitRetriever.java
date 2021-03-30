@@ -91,9 +91,11 @@ public class GitRetriever {
 
 	public void fetch() throws GITSCMException {
 		try {
-			getCurrentProject().fetch()
+			getCurrentProject()
+			.fetch()
 			.setCredentialsProvider(new UsernamePasswordCredentialsProvider("", config.getGitPersonalToken()))
 			.call();
+			logger.info("fetch done.");
 		} catch (GitAPIException  e) {
 			throw new GITSCMException(e);
 		}
@@ -103,37 +105,64 @@ public class GitRetriever {
 		if(followBranch == null) return defaultMasterBranch;
 		return followBranch;
 	}
-
+	
 	public void checkout(String commitHash) throws GITSCMException {
-		String commitId = null;
-		Ref localRef = null;
+		String targetCheckoutObj = null;
+		Ref targetRef = null;
+		final String followBranch = getFollowBranch();
 		try (Git git = getCurrentProject()){
-
-			logger.info("fetch done.");
-
-			commitId = commitHash == null ? getFollowBranch() : commitHash;
-			localRef = commitHash != null ? findRef(commitId) : getBranchLocalRef();
-
-			if(getHeadRef() == null || localRef == null || !getHeadRef().getObjectId().equals(localRef.getObjectId())) {
-				CheckoutCommand cmd = git.checkout()
-						.setProgressMonitor(progressMonitor)
-						.setName(commitId);
-				if(commitHash == null)
-					cmd
-					.setUpstreamMode(SetupUpstreamMode.SET_UPSTREAM)
-					.setStartPoint("origin/"+getFollowBranch())
-					.setCreateBranch(localRef == null);
-				cmd.call();
-				logger.info("checkout done. we now are on ref {}. HEAD is {}", getFollowBranch() , getHeadRef().getObjectId().getName());
-			} 
+			Ref headRef = getHeadRef();
+			if(commitHash == null) {
+				final String remoteBranch = "refs/remotes/origin/" + followBranch;
+				Ref remoteOriginRef = findRef(remoteBranch);
+				if(remoteOriginRef != null) {
+//					targetCheckoutObj = remoteOriginRef.getObjectId().getName();
+//					targetRef = remoteOriginRef;
+					if(!remoteOriginRef.getObjectId().equals(headRef.getObjectId())) {
+						logger.warn("checkout() : pull may be necessary. remoteOriginRef commitID '{}' last of branch {} different from HeadRef."
+								, remoteOriginRef.getObjectId().getName(), remoteBranch);
+						debugBehindCommits();
+					}
+				}
+				targetCheckoutObj = followBranch;
+				targetRef = getBranchLocalRef();
+			}else {
+				targetCheckoutObj = commitHash;
+				targetRef = findRef(targetCheckoutObj);
+			}
+			logger.debug("checkout() : will call checkout('{}') from startPoint('{}').", targetCheckoutObj, followBranch);
+			
+			logger.debug("checkout : localRef objectId is '{}'", targetRef == null ? null : targetRef.getObjectId().getName());
+			logger.debug("checkout : headRef objectId is '{}'", headRef == null ? null : headRef.getObjectId().getName());
+			
+			if(headRef != null && targetRef != null && headRef.getObjectId().equals(targetRef.getObjectId())) {
+				logger.info("checkout : nothing to do. headRef and targetRef are the same '{}'.", headRef.getObjectId().getName());
+				return;
+			}
+			
+			CheckoutCommand cmd = git.checkout()
+					.setProgressMonitor(progressMonitor)
+					.setName(targetCheckoutObj);
+			if(commitHash == null)
+				cmd
+				.setUpstreamMode(SetupUpstreamMode.SET_UPSTREAM)
+				.setStartPoint("origin/"+followBranch)
+				.setCreateBranch(targetRef == null);
+			cmd.call();
+			logger.info("checkout done. we now are on ref {}. HEAD is {}", followBranch , getHeadRef().getObjectId().getName());
 		} catch (GitAPIException  e) {
-			throw new GITSCMException(e, "commitId " + commitId + ", localRef " + localRef);
+			throw new GITSCMException(e, "commitId " + targetCheckoutObj + ", localRef " + targetRef);
 		}
 	}
 
 	private Ref findRef(String objectIdName) throws GITSCMException {
-		if(objectIdName == null) return null;
-		Optional<Ref> matchingRef = getAllBranches().stream()
+		return findRef(objectIdName, getAllBranches());
+	}
+	
+	private Ref findRef(String objectIdName, List<Ref> branches) {
+		if(objectIdName == null || branches == null) return null;
+		Optional<Ref> matchingRef = branches
+				.stream()
 				.filter(r -> objectIdName.equals(r.getName()))
 				.findFirst();
 		return matchingRef.isPresent() ? matchingRef.get() : null;
@@ -146,7 +175,7 @@ public class GitRetriever {
 	private Ref getBranchOriginRef() throws GITSCMException {
 		return findRef(getOriginBranchName());
 	}
-
+	
 	private List<Ref> getAllBranches() throws GITSCMException{
 		try (Git git = getCurrentProject()){
 			return git.branchList().setListMode(ListMode.ALL).call();
@@ -184,7 +213,7 @@ public class GitRetriever {
 			return branchName;
 		return branchName.substring(REMOTE_BRANCHES_PFX.length());
 	}
-	
+
 	public List<RevCommit> getBehindCommits() throws GITSCMException {
 		try (Git git = getCurrentProject(); RevWalk walk = new RevWalk(git.getRepository())) {
 			Ref local = getBranchLocalRef();
@@ -196,8 +225,8 @@ public class GitRetriever {
 				throw new GITSCMException(getFollowBranch() + ": origin branch not found. was branch deleted ?");
 			RevCommit localCommit = walk.parseCommit(local.getObjectId());
 			RevCommit trackingCommit = walk.parseCommit(remote.getObjectId());
-			logger.info("local commit is {}, msg : {}, date : {}", localCommit.getName(), localCommit.getShortMessage(), localCommit.getAuthorIdent().getWhen());
-			logger.info("remote commit is {}, msg : {}, date : {}", trackingCommit.getName(), trackingCommit.getShortMessage(), trackingCommit.getAuthorIdent().getWhen());
+			logger.debug("local commit is {}, msg : {}, date : {}", localCommit.getName(), localCommit.getShortMessage(), localCommit.getAuthorIdent().getWhen());
+			logger.debug("remote commit is {}, msg : {}, date : {}", trackingCommit.getName(), trackingCommit.getShortMessage(), trackingCommit.getAuthorIdent().getWhen());
 			walk.setRevFilter(RevFilter.MERGE_BASE);
 			walk.markStart(localCommit);
 			walk.markStart(trackingCommit);
@@ -205,19 +234,43 @@ public class GitRetriever {
 			walk.reset();
 			walk.setRevFilter(RevFilter.ALL);
 			//			int aheadCount = RevWalkUtils.count(walk, localCommit, mergeBase);
-			return RevWalkUtils.find(walk, trackingCommit, mergeBase);
+			List<RevCommit> result = RevWalkUtils.find(walk, trackingCommit, mergeBase);
+			result.remove(localCommit);
+			return result;
 		}catch(IOException ex) {
 			throw new GITSCMException(ex);
+		}
+	}
+	
+	private void debugBehindCommits() {
+		if(logger.isDebugEnabled()) {
+			try {
+				List<RevCommit> behindCommits = getBehindCommits();
+				logger.debug("{} commits behind head.", behindCommits.size());
+				for (RevCommit c : behindCommits) {
+					logger.debug(" - {} - {} by {} : {}"
+							, c.getAuthorIdent().getWhen()
+							, c.getId().getName()
+							, c.getAuthorIdent().getName() 
+							, c.getShortMessage());
+				}
+			} catch (GITSCMException e) {
+				logger.error("debug trouble {}", e);
+			}
 		}
 	}
 
 	public void pull() throws GITSCMException {
 		try (Git git = getCurrentProject();){
+			if(logger.isInfoEnabled()) {
+				logger.info("pulling {} commits.", getBehindCommits().size());
+			}
+			debugBehindCommits();
 			git.pull()
 			.setProgressMonitor(progressMonitor)
 			.setCredentialsProvider(new UsernamePasswordCredentialsProvider("", config.getGitPersonalToken()))
 			.call();
-			logger.info("pull done. HEAD is {}", getHeadRef().getObjectId().getName());
+			logger.info("pull done. Now HEAD is  {}", getHeadRef().getObjectId().getName());
 		} catch (GitAPIException e) {
 			throw new GITSCMException(e);
 		}
@@ -271,7 +324,7 @@ public class GitRetriever {
 		cloneProject(forceReload);
 		return getHeadRef();
 	}
-	
+
 	public String getTrackingBranch() throws GITSCMException {
 		try(Git git = getCurrentProject()){
 			return getTrackingBranch(git.getRepository());
@@ -285,12 +338,12 @@ public class GitRetriever {
 			throw new GITSCMException(e);
 		}
 	}
-	
+
 	public List<DiffEntry> getLastChangedFiles(int nbCommits) throws GITSCMException{
-		
+
 		try(Git git = getCurrentProject()){
 			Iterator<RevCommit> iter = git.log().setMaxCount(nbCommits).call().iterator();
-			
+
 			if(!iter.hasNext()) return null;
 			RevCommit crt = iter.next();
 			if(!iter.hasNext()) return null;
@@ -299,7 +352,7 @@ public class GitRetriever {
 			do {
 				previous = iter.next();
 			}while(cpt ++ < nbCommits && iter.hasNext());
-			
+
 			return git.diff()
 					.setOldTree(prepareTreeParser(git.getRepository(), crt.getId()))
 					.setNewTree(prepareTreeParser(git.getRepository(), previous.getId()))
@@ -308,7 +361,7 @@ public class GitRetriever {
 			throw new GITSCMException(e);
 		}
 	}
-	
+
 	private static AbstractTreeIterator prepareTreeParser(Repository repository, AnyObjectId ref) throws GITSCMException  {
 		try {
 			RevTree tree = null;
