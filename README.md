@@ -11,7 +11,7 @@ include this snippet in your pom's dependencies.
 ```xml
 <dependency>
 	<groupId>org.toolup.heavyfeather</groupId>
-	<artifactId>heavyfeather-core</artifactId>
+	<artifactId>heavyfeather</artifactId>
 	<version>x.y.z</version>
 </dependency>
 ```
