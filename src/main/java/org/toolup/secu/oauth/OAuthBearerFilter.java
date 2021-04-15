@@ -1,6 +1,7 @@
 package org.toolup.secu.oauth;
 
 import java.io.IOException;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -22,14 +23,14 @@ import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.toolup.secu.oauth.jwt.JWT;
-import org.toolup.secu.oauth.jwt.JWTBuilderFactory;
+import org.toolup.secu.oauth.jwt.parse.JWTParserFactory;
 
 public final class OAuthBearerFilter implements Filter {
 	private static Logger logger = LoggerFactory.getLogger(OAuthBearerFilter.class);
 
 	private static final String BEARER_PREFIX = "Bearer ";
 
-	private JWTBuilderFactory jwtBuilder;
+	private JWTParserFactory jwtBuilder;
 
 	public OAuthBearerFilter() throws OAuthException {
 		initJWTBuilder();
@@ -50,7 +51,7 @@ public final class OAuthBearerFilter implements Filter {
 			if ((header == null) || (!header.startsWith(BEARER_PREFIX)))
 				throw new OAuthException(String.format("missing Bearer token. make sure it is of the form '%s{{bearer}}'", BEARER_PREFIX));
 
-			JWT jwt = jwtBuilder.build(header.substring(BEARER_PREFIX.length()));
+			JWT jwt = jwtBuilder.parse(header.substring(BEARER_PREFIX.length()));
 			((HttpServletRequest) req).setAttribute(JWT.REQ_ATTRBT, jwt);
 
 			/*
@@ -63,11 +64,16 @@ public final class OAuthBearerFilter implements Filter {
 
 			SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(new User(jwt.getSubject(), "", authorities), "", authorities));
 		} catch (OAuthException e) {
-			logger.error("{}", e);
+			logger.error("{}", e.getMessage());
 			((HttpServletResponse) resp).sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden.");
+			return;
 		} catch (Exception e) {
-			logger.error("{}", e);
+			if(logger.isDebugEnabled())  
+				logger.error("{}", e);
+			else
+				logger.error("{}", e.getMessage());
 			((HttpServletResponse) resp).sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Internal Server Error");
+			return;
 		}
 		chain.doFilter(req, resp);
 	}
@@ -84,7 +90,7 @@ public final class OAuthBearerFilter implements Filter {
 	private void initJWTBuilder() throws OAuthException {
 		if(jwtBuilder == null) {
 			try {
-				jwtBuilder = JWTBuilderFactory.newInstance();
+				jwtBuilder = JWTParserFactory.newInstance();
 			} catch (OAuthException e) {
 				throw new OAuthException("Error initializing JWT Builder : newInstance bug.", e, 500);
 			}	
@@ -96,6 +102,10 @@ public final class OAuthBearerFilter implements Filter {
 		} catch (OAuthException e) {
 			throw new OAuthException("Error initializing JWT Builder : keys could not be retrieved", e, 500);
 		}		
+	}
+
+	public String getDefaultPublicKey() throws OAuthException {
+		return Base64.getEncoder().encodeToString(jwtBuilder.getDefaultPublicKey().getEncoded());
 	}
 
 }
