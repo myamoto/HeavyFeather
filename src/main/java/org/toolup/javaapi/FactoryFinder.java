@@ -1,4 +1,4 @@
-package org.toolup.secu.oauth.jwt;
+package org.toolup.javaapi;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -7,11 +7,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Properties;
 
-import org.toolup.secu.oauth.OAuthException;
 
 public class FactoryFinder {
 	
-	static Object find(String factId) throws OAuthException{
+	static Object find(String factId) throws FactoryFinderException{
 		final ClassLoader classLoader;
 
 		final String factoryId = factId;
@@ -20,7 +19,7 @@ public class FactoryFinder {
 			classLoader = Thread.currentThread().getContextClassLoader();
 
 		} catch (Exception x) {
-			throw new OAuthException(x, 500);
+			throw new FactoryFinderException(x);
 		}
 		// Use the system property first
 		try {
@@ -84,7 +83,7 @@ public class FactoryFinder {
 		return null;
 	}
 
-	static Object find(String factoryId, String fallbackClassName) throws OAuthException{
+	public static Object find(String factoryId, String fallbackClassName) throws FactoryFinderException{
 		Object obj = find(factoryId);
 		if (obj != null)
 			return obj;
@@ -92,16 +91,16 @@ public class FactoryFinder {
 		try {
 			classLoader = Thread.currentThread().getContextClassLoader();
 		} catch (Exception x) {
-			throw new OAuthException(x, 500);
+			throw new FactoryFinderException(x);
 		}
 		if (fallbackClassName == null) {
-			throw new OAuthException("Provider for " + factoryId + " cannot be found", 500);
+			throw new FactoryFinderException("Provider for " + factoryId + " cannot be found");
 		}
 
 		return newInstance(fallbackClassName, classLoader);
 	}
 
-	private static Object newInstance(String className, ClassLoader classLoader) throws OAuthException{
+	private static Object newInstance(String className, ClassLoader classLoader) throws FactoryFinderException{
 		try {
 			Class<?> spiClass;
 			if (classLoader == null) {
@@ -111,9 +110,12 @@ public class FactoryFinder {
 			}
 			return spiClass.newInstance();
 		} catch (ClassNotFoundException x) {
-			throw new OAuthException( "Provider " + className + " not found", x, 500);
+			throw new FactoryFinderException( "Provider " + className + " not found", x);
 		} catch (Exception x) {
-			throw new OAuthException("Provider " + className + " could not be instantiated: " + className, x, 500);
+			throw new FactoryFinderException("Provider " + className + " could not be instantiated: " + className, x);
 		}
 	}
+	
+	
+	
 }

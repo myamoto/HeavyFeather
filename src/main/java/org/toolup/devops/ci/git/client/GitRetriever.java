@@ -95,7 +95,7 @@ public class GitRetriever {
 			.fetch()
 			.setCredentialsProvider(new UsernamePasswordCredentialsProvider("", config.getGitPersonalToken()))
 			.call();
-			logger.debug("fetch done.");
+			logger.info("fetch done.");
 		} catch (GitAPIException  e) {
 			throw new GITSCMException(e);
 		}
@@ -136,7 +136,7 @@ public class GitRetriever {
 			logger.debug("checkout : headRef objectId is '{}'", headRef == null ? null : headRef.getObjectId().getName());
 			
 			if(headRef != null && targetRef != null && headRef.getObjectId().equals(targetRef.getObjectId())) {
-				logger.debug("checkout : nothing to do. headRef and targetRef are the same '{}'.", headRef.getObjectId().getName());
+				logger.info("checkout : nothing to do. headRef and targetRef are the same '{}'.", headRef.getObjectId().getName());
 				return;
 			}
 			
