@@ -7,14 +7,18 @@ import java.util.List;
 import org.apache.http.Header;
 
 
-public class HTTPWrapperException extends Exception{
+public class HTTPWrapperException extends AbstractHttpException{
 
 	private static final long serialVersionUID = -3000391496445588070L;
 
-	public enum HTTPVERB{GET, POST, DELETE, PATCH}
+	public enum HTTPVERB{GET, POST, DELETE, PATCH, PUT;
+
+	static HTTPVERB from(String method) {
+		return HTTPVERB.valueOf(method.toUpperCase());
+	}
+	}
 	
 	private final HTTPVERB verb;
-	private final int statusCode;
 	private final String url;
 	private final String responseContent;
 	private final String xError;
@@ -25,9 +29,8 @@ public class HTTPWrapperException extends Exception{
 	}
 		
 	public HTTPWrapperException(HTTPVERB verb, String xError, int statusCode, String url, String responseContent, Throwable t, String msg, Header... headerList) {
-		super(t);
+		super(msg, t, statusCode);
 		this.verb = verb;
-		this.statusCode = statusCode;
 		this.url = url;
 		this.responseContent = responseContent;
 		this.xError = xError;
@@ -39,7 +42,7 @@ public class HTTPWrapperException extends Exception{
 	}
 	
 	public HTTPWrapperException(HTTPVERB verb, String url, Throwable t, String msg) {
-		this(verb, null, -1, url, msg, t);
+		this(verb, null, -1, url, null, t, msg);
 	}
 	
 	public HTTPWrapperException(HTTPVERB verb, String url, Throwable t) {
@@ -52,7 +55,7 @@ public class HTTPWrapperException extends Exception{
 		
 		return String.format("%sHTTP status %d using %s on url [%s], probable cause [%s]. response headers : %s"
 				, (msg != null ? msg + " : " : "")
-				, statusCode
+				, getHttpStatus()
 				, verb
 				, url
 				, xError != null ? String.format("X-Error = %s", xError) : String.format("response content = %s", responseContent)
@@ -71,12 +74,12 @@ public class HTTPWrapperException extends Exception{
 		return headerList != null ? headerList.toString() : "";
 	}
 
-	public int getStatusCode() {
-		return statusCode;
-	}
-
 	public String getResponseContent() {
 		return responseContent;
+	}
+	
+	public int getStatusCode() {
+		return getHttpStatus();
 	}
 	
 }
