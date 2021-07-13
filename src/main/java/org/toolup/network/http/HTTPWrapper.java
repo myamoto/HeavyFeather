@@ -11,6 +11,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
 import java.util.stream.Collectors;
 
 import javax.net.ssl.SSLContext;
@@ -54,19 +55,22 @@ import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.ssl.SSLContexts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.toolup.app.IConfigurable;
 import org.toolup.app.ParamLoader;
+import org.toolup.io.properties.PropertiesUtilsException;
 import org.toolup.network.http.HTTPWrapperException.HTTPVERB;
 
 import com.jayway.jsonpath.Configuration;
 
-public class HTTPWrapper {
+public class HTTPWrapper implements IConfigurable{
+	
+	private final static HTTPWrapper defaultInstance = new HTTPWrapper();
+	
+	public static HTTPWrapper getDefaultInstance() {
+		return defaultInstance;
+	}
 
 	private final Logger logger = LoggerFactory.getLogger(HTTPWrapper.class);
-
-	public static final String PROP_PROXY_HOST = "ProxyHost";
-	public static final String PROP_PROXY_PORT = "ProxyPort";
-	public static final String PROP_PROXY_USER = "ProxyUser";
-	public static final String PROP_PROXY_PASSWORD = "ProxyPassword";
 
 	private boolean useProxy = false;
 
@@ -395,33 +399,29 @@ public class HTTPWrapper {
 	}
 
 	public static final String getProxyHost() {
-		return ParamLoader.load(PROP_PROXY_HOST);
+		return ParamLoader.load(HttpWrapperConf.PROP_PROXY_HOST);
 	}
 	public static final String getProxyPort() {
-		return ParamLoader.load(PROP_PROXY_PORT);
+		return ParamLoader.load(HttpWrapperConf.PROP_PROXY_PORT);
 	}
 
 	public static final String getProxyUser() {
-		return ParamLoader.load(PROP_PROXY_USER);
+		return ParamLoader.load(HttpWrapperConf.PROP_PROXY_USER);
 	}
 
 	public static final String getProxyPassword() {
-		return ParamLoader.load(PROP_PROXY_PASSWORD);
+		return ParamLoader.load(HttpWrapperConf.PROP_PROXY_PASSWORD);
 	}
 
-	public static final void setProxyHost(String host) {
-		ParamLoader.setParam(PROP_PROXY_HOST, host);
+	public void configure(Properties props) throws PropertiesUtilsException {
+		configure(HttpWrapperConf.from(props));
 	}
-	public static final void setProxyPort(String port) {
-		ParamLoader.setParam(PROP_PROXY_PORT, port);
-	}
-
-	public static final void setProxyUser(String usr) {
-		ParamLoader.setParam(PROP_PROXY_USER, usr);
-	}
-
-	public static final void setProxyPassword(String pwd) {
-		ParamLoader.setParam(PROP_PROXY_PASSWORD, pwd);
+	
+	public void configure(HttpWrapperConf conf) {
+		ParamLoader.setParam(HttpWrapperConf.PROP_PROXY_HOST, conf.getProxyHost());
+		ParamLoader.setParam(HttpWrapperConf.PROP_PROXY_PORT, conf.getProxyPort());
+		ParamLoader.setParam(HttpWrapperConf.PROP_PROXY_USER, conf.getProxyUser());
+		ParamLoader.setParam(HttpWrapperConf.PROP_PROXY_PASSWORD, conf.getProxyPassword());
 	}
 
 	/**
@@ -556,4 +556,5 @@ public class HTTPWrapper {
 					+ ", parameters=" + parameters + ", context=" + context + "]";
 		}
 	}
+
 }

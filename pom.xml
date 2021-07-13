@@ -6,7 +6,7 @@
 	<groupId>org.toolup.heavyfeather</groupId>
 	<artifactId>heavyfeather</artifactId>
 	<description>Shared toolup's JAVA libraries</description>
-	<version>1.0.1</version>
+	<version>1.0.0</version>
 	<packaging>jar</packaging>
 	<properties>
 		<java.version>1.8</java.version>

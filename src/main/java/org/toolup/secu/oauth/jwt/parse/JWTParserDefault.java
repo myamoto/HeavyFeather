@@ -24,10 +24,16 @@ public class JWTParserDefault extends JWTParserFactory{
 	private IKeysHolder keyHolder;
 	
 	public JWTParserDefault() throws FactoryFinderException {
-		if(System.getProperty(UrlKeyCache.OAUTH_PUBLIC_KEY_URL_PARAM) != null)
+		
+		if(System.getProperty(UrlKeyCache.OAUTH_PUBLIC_KEY_URL_PARAM) != null) {
+			logger.info("System property {} found : going with UrlKeyCache - url = {}."
+					, UrlKeyCache.OAUTH_PUBLIC_KEY_URL_PARAM
+					, System.getProperty(UrlKeyCache.OAUTH_PUBLIC_KEY_URL_PARAM));
 			keyHolder = new UrlKeyCache();
-		else
+		}else {
+			logger.info("System property {} not found : going with UrlKeyCache.", UrlKeyCache.OAUTH_PUBLIC_KEY_URL_PARAM);
 			keyHolder = new JWTForgeKeyCache();
+		}
 	}
 
 	public Hashtable<String, PublicKey> getPublicKeys() throws OAuthException {
