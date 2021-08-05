@@ -29,26 +29,26 @@ import com.jayway.jsonpath.JsonPath;
 public class HTTPJsonWrapper {
 
 	public static final int LIMIT_MAX_VALUE = 50;
-	
+
 	private static final  ObjectMapper objectMapper = new ObjectMapper();
 	static {
 		objectMapper.configure(Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 	}
-	
+
 	private final Logger logger = LoggerFactory.getLogger(HTTPJsonWrapper.class);
 	private final HTTPWrapper httpWrapper = new HTTPWrapper();
-	
+
 	private final List<Header> defaultHeaders;
-	
+
 	private  String limitParamName = "limit";
 	private  String offsetParamName = "offset";
-	
-	
+
+
 	public HTTPJsonWrapper() {
 		defaultHeaders = new ArrayList<Header>();
 	}
-	
-	
+
+
 	public HTTPJsonWrapper limitParamName(String limitParamName) {
 		this.limitParamName = limitParamName;
 		return this;
@@ -58,7 +58,7 @@ public class HTTPJsonWrapper {
 		this.offsetParamName = offsetParamName;
 		return this;
 	}
-	
+
 	public List<Header> getDefaultHeaders() {
 		return defaultHeaders;
 	}
@@ -73,15 +73,15 @@ public class HTTPJsonWrapper {
 		if(defaultHeaders != null) this.defaultHeaders.addAll(Arrays.asList(defaultHeaders));
 		return this;
 	}
-	
+
 	public HTTPJsonWrapper defaultHeaders(List<Header> defaultHeaders) {
 		this.defaultHeaders.clear();
 		if(defaultHeaders != null) this.defaultHeaders.addAll(defaultHeaders);
 		return this;
 	}
-	
+
 	// GET
-	
+
 	public <T> T readSingle(CloseableHttpClient httpClient, HttpReqParam<T> param) throws HTTPWrapperException {
 		if(param == null) return null;
 		String url = param.getUrl();
@@ -95,7 +95,7 @@ public class HTTPJsonWrapper {
 			throw new HTTPWrapperException(HTTPVERB.GET, url, ex);
 		}
 	}
-	
+
 	public <T> List<T> readList(CloseableHttpClient httpClient, HttpReqParam<T> param) throws HTTPWrapperException{
 		if(param == null) return null;
 		String url = param.getUrl();
@@ -114,13 +114,13 @@ public class HTTPJsonWrapper {
 			throw new HTTPWrapperException(HTTPVERB.GET, url, ex);
 		}
 	}
-	
+
 	public <T> List<T> readAll(CloseableHttpClient httpClient, HttpReqParam<T> param) throws HTTPWrapperException{
 		if(param == null) return null;
 		String urlBase = param.getUrl();
 		try {
 			List<T> result = new ArrayList<>();
-			
+
 			if(urlBase.contains("?")) 
 				throw new HTTPWrapperException(HTTPVERB.GET, urlBase, null, "baseUrl param must not contain '?'.");
 			int limit = LIMIT_MAX_VALUE;
@@ -128,7 +128,7 @@ public class HTTPJsonWrapper {
 				int offset = limit * i;
 
 				List<T> subResLst = readList(httpClient, param.clone()
-							.setUrl(HTTPWrapper.fullUrl(urlBase, httpGetListParams(limit, offset, param.getReqParamsArr()))));
+						.setUrl(HTTPWrapper.fullUrl(urlBase, httpGetListParams(limit, offset, param.getReqParamsArr()))));
 				if(subResLst.isEmpty()) break;
 				result.addAll(subResLst);
 			}
@@ -137,7 +137,7 @@ public class HTTPJsonWrapper {
 			throw new HTTPWrapperException(HTTPVERB.GET, urlBase, ex);
 		}
 	}
-	
+
 	public Object httpGETParsedJsonDocument(String url, CloseableHttpClient httpClient) throws HTTPWrapperException {
 		try {
 			return httpWrapper.httpGETParsedJson(url, httpClient, defaultHeaders);
@@ -147,7 +147,7 @@ public class HTTPJsonWrapper {
 		}
 		return null;
 	}
-	
+
 	public String httpGetListParams(int limit, int offset, NameValuePair... params) throws HTTPWrapperException {
 		List<NameValuePair> paramLst = new ArrayList<>();
 		if(params != null) 
@@ -180,73 +180,73 @@ public class HTTPJsonWrapper {
 
 		return res.toString();
 	}
-	
+
 	// POST
-		public <T> List<T> postList(CloseableHttpClient httpClient, HttpReqParam<T> param) throws HTTPWrapperException{
-			return postList(httpClient, param, "$");
-		}
-		
-		public <T> List<T> postList(CloseableHttpClient httpClient, HttpReqParam<T> param, String listJsonPath) throws HTTPWrapperException{
-			String url = param.getUrl();
-			try {
-				String resp = httpPOST(httpClient, param);
+	public <T> List<T> postList(CloseableHttpClient httpClient, HttpReqParam<T> param) throws HTTPWrapperException{
+		return postList(httpClient, param, "$");
+	}
+
+	public <T> List<T> postList(CloseableHttpClient httpClient, HttpReqParam<T> param, String listJsonPath) throws HTTPWrapperException{
+		String url = param.getUrl();
+		try {
+			String resp = httpPOST(httpClient, param);
+			if(logger.isDebugEnabled())
+				logger.debug("postList {} -> {}", url, resp);
+			List<T> result = new ArrayList<>();
+			if(resp == null) return result;
+
+			List<Object> res = JsonPath.read(resp, listJsonPath);
+			if(logger.isDebugEnabled())
+				logger.debug("postList {}", url);
+			for (Object o : res) {
 				if(logger.isDebugEnabled())
-					logger.debug("postList {} -> {}", url, resp);
-				List<T> result = new ArrayList<>();
-				if(resp == null) return result;
-				
-				List<Object> res = JsonPath.read(resp, listJsonPath);
-				if(logger.isDebugEnabled())
-					logger.debug("postList {}", url);
-				for (Object o : res) {
-					if(logger.isDebugEnabled())
-						logger.debug("  -> {} adding result {}", url, objectMapper.writeValueAsString(o));
-					
-					result.add(objectMapper.readValue(objectMapper.writeValueAsString(o), param.getClazz()));
-				}
-				return result;
-			}catch(IOException ex) {
-				throw new HTTPWrapperException(HTTPVERB.POST, url, ex);
+					logger.debug("  -> {} adding result {}", url, objectMapper.writeValueAsString(o));
+
+				result.add(objectMapper.readValue(objectMapper.writeValueAsString(o), param.getClazz()));
 			}
+			return result;
+		}catch(IOException ex) {
+			throw new HTTPWrapperException(HTTPVERB.POST, url, ex);
 		}
-		
-		public <T> T postSingle(CloseableHttpClient httpClient, HttpReqParam<T> param) throws HTTPWrapperException {
-			String url = param.getUrl();
-			String objectValue = null;
-			try {
-				objectValue = httpPOST(httpClient, param);
-				if(logger.isDebugEnabled())
-					logger.debug("postSingle {} -> {}", url, objectValue);
-				if(objectValue == null) return null;
-				return objectMapper.readValue(objectValue, param.getClazz());
-			}catch(IOException ex) {
-				throw new HTTPWrapperException(HTTPVERB.POST, url , ex,  String.format("postSingle : val = %s", objectValue));
-			}
+	}
+
+	public <T> T postSingle(CloseableHttpClient httpClient, HttpReqParam<T> param) throws HTTPWrapperException {
+		String url = param.getUrl();
+		String objectValue = null;
+		try {
+			objectValue = httpPOST(httpClient, param);
+			if(logger.isDebugEnabled())
+				logger.debug("postSingle {} -> {}", url, objectValue);
+			if(objectValue == null) return null;
+			return objectMapper.readValue(objectValue, param.getClazz());
+		}catch(IOException ex) {
+			throw new HTTPWrapperException(HTTPVERB.POST, url , ex,  String.format("postSingle : val = %s", objectValue));
 		}
-		
-		public String httpPOST(CloseableHttpClient httpClient, HttpReqParam<?> param) throws HTTPWrapperException {
-			if(param == null) return null;
-			Object body = param.getBody();
-			try {
-				return httpWrapper.httpPOSTParsedJson(param.getUrl()
-						, body == null ? null : IOUtils.toInputStream(writeValueAsString(body), "utf-8")
-						, httpClient
-						, getHeaders(param.getHeadersArr())
-						, param.getReqParams()
-						, param.getHttpClContext()
-						, param.getContentType());
-			} catch(HTTPWrapperException e) {
-				handleSecurityException(e);
-			} catch (IOException ex) {
-				throw new HTTPWrapperException(HTTPVERB.POST, param.getUrl(), ex);
-			}
-			return null;
+	}
+
+	public String httpPOST(CloseableHttpClient httpClient, HttpReqParam<?> param) throws HTTPWrapperException {
+		if(param == null) return null;
+		Object body = param.getBody();
+		try {
+			return httpWrapper.httpPOSTParsedJson(param.getUrl()
+					, body == null ? null : IOUtils.toInputStream(writeValueAsString(body), "utf-8")
+							, httpClient
+							, getHeaders(param.getHeadersArr())
+							, param.getReqParams()
+							, param.getHttpClContext()
+							, param.getContentType());
+		} catch(HTTPWrapperException e) {
+			handleSecurityException(e);
+		} catch (IOException ex) {
+			throw new HTTPWrapperException(HTTPVERB.POST, param.getUrl(), ex);
 		}
-	
+		return null;
+	}
+
 	//PATCH
-	
+
 	public <T> T putSingle(CloseableHttpClient httpClient, HttpReqParam<T> param) throws HTTPWrapperException {
-		
+
 		try {
 			String obj = httpPUT(httpClient, param);
 			if(logger.isDebugEnabled())
@@ -257,7 +257,7 @@ public class HTTPJsonWrapper {
 			throw new HTTPWrapperException(HTTPVERB.PATCH, param.getUrl(), ex);
 		}
 	}
-	
+
 	public <T> String httpPUT(CloseableHttpClient httpClient, HttpReqParam<T> param) throws HTTPWrapperException {
 		if(param == null) return null;
 		String url = param.getUrl();
@@ -271,9 +271,9 @@ public class HTTPJsonWrapper {
 		}
 		return null;
 	}
-	
+
 	//PATCH
-	
+
 	public <T> T patchSingle(CloseableHttpClient httpClient, HttpReqParam<T> param) throws HTTPWrapperException {
 		try {
 			String obj = httpPATCH(httpClient, param);
@@ -285,8 +285,8 @@ public class HTTPJsonWrapper {
 			throw new HTTPWrapperException(HTTPVERB.PATCH, param.getUrl(), ex);
 		}
 	}
-	
-	
+
+
 	public <T> String httpPATCH(CloseableHttpClient httpClient, HttpReqParam<T> param) throws HTTPWrapperException {
 		if(param == null) return null;
 		Object body = param.getBody();
@@ -300,14 +300,24 @@ public class HTTPJsonWrapper {
 		}
 		return null;
 	}
-	
+
 	//DELETE
-	
+	public <T> T deleteSingle(CloseableHttpClient httpClient, HttpReqParam<T> param) throws HTTPWrapperException {
+		try {
+			String obj = httpWrapper.httpDeleteContent(param.getUrl(), httpClient, getHeaders(param.getHeadersArr()));
+			if(logger.isDebugEnabled())
+				logger.debug("patchSingle {}   -> {}", param.getUrl(), objectMapper.writeValueAsString(obj));
+			if(obj == null) return null;
+			return objectMapper.readValue(obj, param.getClazz());
+		}catch(IOException ex) {
+			throw new HTTPWrapperException(HTTPVERB.PATCH, param.getUrl(), ex);
+		}
+	}
+
 	public <T> CloseableHttpResponse httpDELETE(CloseableHttpClient httpClient, HttpReqParam<T> param) throws HTTPWrapperException {
 		return httpDELETE(param.getUrl(), httpClient, param.getHeadersArr());
 	}
-		
-	
+
 	public CloseableHttpResponse httpDELETE(String url, CloseableHttpClient httpClient, Header...headers) throws HTTPWrapperException {
 		try {
 			return httpWrapper.httpDelete(url, httpClient, getHeaders(headers));
@@ -316,17 +326,17 @@ public class HTTPJsonWrapper {
 		}
 		return null;
 	}
-	
+
 	// MISC
-	
-	private List<Header> getHeaders(Header...headers){
+
+	private List<Header> getHeaders(Header... headers){
 		List<Header> result = new ArrayList<Header>();
 		result.addAll(defaultHeaders);
 		if(headers != null)
 			result.addAll(Arrays.asList(headers));
 		return result;
 	}
-	
+
 	public void handleSecurityException(HTTPWrapperException e) throws HTTPWrapperException {
 		if(e.getStatusCode() == 401) {
 			throw new HTTPWrapperException(e.getVerb(), e.getUrl(), e, "Unauthorized : make sure your API credentials are valid.");
@@ -336,15 +346,15 @@ public class HTTPJsonWrapper {
 			throw e;
 		}
 	}
-	
+
 	private String writeValueAsString(Object body) throws JsonGenerationException, JsonMappingException, IOException {
 		return body instanceof String ? (String)body : objectMapper.writeValueAsString(body);
 	}
-	
+
 	public static String fullUrl(String baseUrl, String params) {
 		if(params == null || params.isEmpty()) return baseUrl;
 		return String.format("%s?%s", baseUrl, params);
 	}
-	
-	
+
+
 }

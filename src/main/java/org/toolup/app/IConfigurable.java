@@ -4,7 +4,7 @@ import java.util.Properties;
 
 import org.toolup.io.properties.PropertiesUtilsException;
 
-public interface IConfigurable {
+public interface IConfigurable<T> {
 
-	public void configure(Properties props) throws ConfigurationException, PropertiesUtilsException;
+	public T configure(Properties props) throws ConfigurationException, PropertiesUtilsException;
 }

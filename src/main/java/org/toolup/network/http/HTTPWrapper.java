@@ -63,9 +63,9 @@ import org.toolup.network.http.HTTPWrapperException.HTTPVERB;
 import com.jayway.jsonpath.Configuration;
 
 public class HTTPWrapper implements IConfigurable{
-	
+
 	private final static HTTPWrapper defaultInstance = new HTTPWrapper();
-	
+
 	public static HTTPWrapper getDefaultInstance() {
 		return defaultInstance;
 	}
@@ -127,7 +127,7 @@ public class HTTPWrapper implements IConfigurable{
 				.setParameters(parameters)
 				.setContext(context)
 				.setContentType(contentType);
-		
+
 		try(CloseableHttpResponse resp = httpUpdt(req, httpClient)){
 			return parseJson(resp);
 		} catch (UnsupportedOperationException | IOException e) {
@@ -151,7 +151,7 @@ public class HTTPWrapper implements IConfigurable{
 				.setHeaders(headers)
 				.setParameters(parameters), httpClient);
 	}
-	
+
 	public String httpPUTContent(String url, InputStream bodyIS, CloseableHttpClient httpClient
 			, List<? extends Header> headers, List<NameValuePair> parameters) throws HTTPWrapperException {
 		try(CloseableHttpResponse resp = httpPUT(url, bodyIS, httpClient, headers, parameters)){
@@ -277,11 +277,28 @@ public class HTTPWrapper implements IConfigurable{
 		}
 	}
 
+	// DELETE
+
+	public String httpDeleteContent(String url, CloseableHttpClient httpClient, List<? extends Header> headers) throws HTTPWrapperException {
+		try(CloseableHttpResponse resp = httpDelete(url, httpClient, headers)){
+			return parseJson(resp);
+		} catch (UnsupportedOperationException | IOException e) {
+			throw new HTTPWrapperException(HTTPVERB.GET, url, e);
+		}
+	}
+
+	public Object httpDeleteParsedJson(String url, CloseableHttpClient httpClient, List<? extends Header> headers) throws HTTPWrapperException {
+		String resp = httpDeleteContent(url, httpClient, headers);
+		return Configuration.defaultConfiguration().jsonProvider().parse(resp);
+	}
+
 	public CloseableHttpResponse httpDelete(String url, CloseableHttpClient httpClient, List<? extends Header> headers) throws HTTPWrapperException {
 		HttpDelete httpDelete = new HttpDelete(url);
 		handleProxy(httpDelete);
-		for (Header header : headers) {
-			httpDelete.addHeader(header);
+		if(headers != null) {
+			for (Header header : headers) {
+				httpDelete.addHeader(header);
+			}
 		}
 		try(CloseableHttpResponse result = httpClient.execute(httpDelete)){
 			if(!DELETE_STATUSCODE_OK.contains(result.getStatusLine().getStatusCode())) {
@@ -413,15 +430,16 @@ public class HTTPWrapper implements IConfigurable{
 		return ParamLoader.load(HttpWrapperConf.PROP_PROXY_PASSWORD);
 	}
 
-	public void configure(Properties props) throws PropertiesUtilsException {
-		configure(HttpWrapperConf.from(props));
+	public HTTPWrapper configure(Properties props) throws PropertiesUtilsException {
+		return configure(HttpWrapperConf.from(props));
 	}
-	
-	public void configure(HttpWrapperConf conf) {
+
+	public HTTPWrapper configure(HttpWrapperConf conf) {
 		ParamLoader.setParam(HttpWrapperConf.PROP_PROXY_HOST, conf.getProxyHost());
 		ParamLoader.setParam(HttpWrapperConf.PROP_PROXY_PORT, conf.getProxyPort());
 		ParamLoader.setParam(HttpWrapperConf.PROP_PROXY_USER, conf.getProxyUser());
 		ParamLoader.setParam(HttpWrapperConf.PROP_PROXY_PASSWORD, conf.getProxyPassword());
+		return this;
 	}
 
 	/**
@@ -490,7 +508,7 @@ public class HTTPWrapper implements IConfigurable{
 						.setCookieSpec(CookieSpecs.STANDARD).build())
 				.setDefaultCredentialsProvider(provider).build();
 	}
-	
+
 	private final class HttpReqWrapper {
 
 		private String url;
@@ -500,7 +518,7 @@ public class HTTPWrapper implements IConfigurable{
 		private List<NameValuePair> parameters;
 		private HttpClientContext context;
 		private ContentType contentType;
-		
+
 		public ContentType getContentType() {
 			return contentType;
 		}
