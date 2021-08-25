@@ -86,6 +86,8 @@ public class HTTPJsonWrapper {
 		if(param == null) return null;
 		String url = param.getUrl();
 		try {
+			if(logger.isDebugEnabled())
+				logger.debug("readSingle {}   -> ...", url);
 			Object obj = httpGETParsedJsonDocument(url, httpClient);
 			if(logger.isDebugEnabled())
 				logger.debug("readSingle {}   -> {}", url, objectMapper.writeValueAsString(obj));
@@ -189,9 +191,11 @@ public class HTTPJsonWrapper {
 	public <T> List<T> postList(CloseableHttpClient httpClient, HttpReqParam<T> param, String listJsonPath) throws HTTPWrapperException{
 		String url = param.getUrl();
 		try {
+			if(logger.isDebugEnabled())
+				logger.debug("postList {}   -> req-body : {}", param.getUrl(), objectMapper.writeValueAsString(param.getBody()));
 			String resp = httpPOST(httpClient, param);
 			if(logger.isDebugEnabled())
-				logger.debug("postList {} -> {}", url, resp);
+				logger.debug("postList {} -> resp : {}", url, resp);
 			List<T> result = new ArrayList<>();
 			if(resp == null) return result;
 
@@ -214,9 +218,11 @@ public class HTTPJsonWrapper {
 		String url = param.getUrl();
 		String objectValue = null;
 		try {
+			if(logger.isDebugEnabled())
+				logger.debug("postSingle {}   -> req-body : {}", param.getUrl(), objectMapper.writeValueAsString(param.getBody()));
 			objectValue = httpPOST(httpClient, param);
 			if(logger.isDebugEnabled())
-				logger.debug("postSingle {} -> {}", url, objectValue);
+				logger.debug("postSingle {}   -> resp : {}", url, objectValue);
 			if(objectValue == null) return null;
 			return objectMapper.readValue(objectValue, param.getClazz());
 		}catch(IOException ex) {
@@ -248,9 +254,11 @@ public class HTTPJsonWrapper {
 	public <T> T putSingle(CloseableHttpClient httpClient, HttpReqParam<T> param) throws HTTPWrapperException {
 
 		try {
+			if(logger.isDebugEnabled())
+				logger.debug("putSingle {}   -> req-body : {}", param.getUrl(), objectMapper.writeValueAsString(param.getBody()));
 			String obj = httpPUT(httpClient, param);
 			if(logger.isDebugEnabled())
-				logger.debug("patchSingle {}   -> {}", param.getUrl(), objectMapper.writeValueAsString(obj));
+				logger.debug("putSingle {}   -> resp : {}", param.getUrl(), objectMapper.writeValueAsString(obj));
 			if(obj == null) return null;
 			return objectMapper.readValue(obj, param.getClazz());
 		}catch(IOException ex) {
@@ -276,9 +284,11 @@ public class HTTPJsonWrapper {
 
 	public <T> T patchSingle(CloseableHttpClient httpClient, HttpReqParam<T> param) throws HTTPWrapperException {
 		try {
+			if(logger.isDebugEnabled())
+				logger.debug("patchSingle {}   -> req-body : {}", param.getUrl(), objectMapper.writeValueAsString(param.getBody()));
 			String obj = httpPATCH(httpClient, param);
 			if(logger.isDebugEnabled())
-				logger.debug("patchSingle {}   -> {}", param.getUrl(), objectMapper.writeValueAsString(obj));
+				logger.debug("patchSingle {}   -> resp : {}", param.getUrl(), objectMapper.writeValueAsString(obj));
 			if(obj == null) return null;
 			return objectMapper.readValue(obj, param.getClazz());
 		}catch(IOException ex) {
@@ -302,15 +312,18 @@ public class HTTPJsonWrapper {
 	}
 
 	//DELETE
+	
 	public <T> T deleteSingle(CloseableHttpClient httpClient, HttpReqParam<T> param) throws HTTPWrapperException {
 		try {
+			if(logger.isDebugEnabled())
+				logger.debug("deleteSingle {}   -> req-body : {}", param.getUrl(), objectMapper.writeValueAsString(param.getBody()));
 			String obj = httpWrapper.httpDeleteContent(param.getUrl(), httpClient, getHeaders(param.getHeadersArr()));
 			if(logger.isDebugEnabled())
-				logger.debug("patchSingle {}   -> {}", param.getUrl(), objectMapper.writeValueAsString(obj));
+				logger.debug("deleteSingle {}   -> resp : {}", param.getUrl(), objectMapper.writeValueAsString(obj));
 			if(obj == null) return null;
 			return objectMapper.readValue(obj, param.getClazz());
 		}catch(IOException ex) {
-			throw new HTTPWrapperException(HTTPVERB.PATCH, param.getUrl(), ex);
+			throw new HTTPWrapperException(HTTPVERB.DELETE, param.getUrl(), ex);
 		}
 	}
 
@@ -320,7 +333,12 @@ public class HTTPJsonWrapper {
 
 	public CloseableHttpResponse httpDELETE(String url, CloseableHttpClient httpClient, Header...headers) throws HTTPWrapperException {
 		try {
-			return httpWrapper.httpDelete(url, httpClient, getHeaders(headers));
+			if(logger.isDebugEnabled())
+				logger.debug("httpDELETE {}   -> ...", url);
+			CloseableHttpResponse r = httpWrapper.httpDelete(url, httpClient, getHeaders(headers));
+			if(logger.isDebugEnabled())
+				logger.debug("httpDELETE {}   -> {}", url, r.getStatusLine());
+			return r;
 		} catch(HTTPWrapperException e) {
 			handleSecurityException(e);
 		}
