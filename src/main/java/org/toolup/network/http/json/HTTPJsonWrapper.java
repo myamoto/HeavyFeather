@@ -2,18 +2,14 @@ package org.toolup.network.http.json;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
-import org.apache.http.NameValuePair;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.message.BasicNameValuePair;
 import org.codehaus.jackson.JsonGenerationException;
 import org.codehaus.jackson.map.DeserializationConfig.Feature;
 import org.codehaus.jackson.map.JsonMappingException;
@@ -40,8 +36,8 @@ public class HTTPJsonWrapper {
 
 	private final List<Header> defaultHeaders;
 
-	private  String limitParamName = "limit";
-	private  String offsetParamName = "offset";
+	private String limitParamName = "limit";
+	private String offsetParamName = "offset";
 
 
 	public HTTPJsonWrapper() {
@@ -58,6 +54,16 @@ public class HTTPJsonWrapper {
 		this.offsetParamName = offsetParamName;
 		return this;
 	}
+	
+	public String getLimitParamName() {
+		return limitParamName;
+	}
+
+
+	public String getOffsetParamName() {
+		return offsetParamName;
+	}
+
 
 	public List<Header> getDefaultHeaders() {
 		return defaultHeaders;
@@ -130,7 +136,7 @@ public class HTTPJsonWrapper {
 				int offset = limit * i;
 
 				List<T> subResLst = readList(httpClient, param.clone()
-						.setUrl(HTTPWrapper.fullUrl(urlBase, httpGetListParams(limit, offset, param.getReqParamsArr()))));
+						.setUrl(HTTPWrapper.fullUrl(urlBase, HTTPWrapper.httpGetListParams(limit, offset, limitParamName, offsetParamName, param.getReqParamsArr()))));
 				if(subResLst.isEmpty()) break;
 				result.addAll(subResLst);
 			}
@@ -148,39 +154,6 @@ public class HTTPJsonWrapper {
 			handleSecurityException(e);
 		}
 		return null;
-	}
-
-	public String httpGetListParams(int limit, int offset, NameValuePair... params) throws HTTPWrapperException {
-		List<NameValuePair> paramLst = new ArrayList<>();
-		if(params != null) 
-			paramLst.addAll(Arrays.asList(params));
-
-		if(limit > HTTPJsonWrapper.LIMIT_MAX_VALUE) 
-			throw new HTTPWrapperException(HTTPVERB.GET, null, null, String.format( "limit cannot excess %d.", HTTPJsonWrapper.LIMIT_MAX_VALUE));
-
-		paramLst.add(new BasicNameValuePair(limitParamName, Integer.toString(limit)));
-		paramLst.add(new BasicNameValuePair(offsetParamName, Integer.toString(offset)));
-
-		return httpGetParams(paramLst.toArray(new NameValuePair[paramLst.size()]));
-	}
-
-	public String httpGetParams(NameValuePair... params) throws HTTPWrapperException {
-		List<NameValuePair> paramLst = new ArrayList<>();
-		if(params != null) paramLst.addAll(Arrays.asList(params));
-
-		StringBuilder res = new StringBuilder();
-		if(params == null || params.length == 0) return res.toString();
-		for (int i = 0; i < params.length; ++i) {
-			NameValuePair param = params[i];
-			try {
-				res.append(String.format("%s=%s", param.getName(), URLEncoder.encode(param.getValue(), "utf-8")));
-			} catch (UnsupportedEncodingException e) {
-				throw new HTTPWrapperException(HTTPVERB.GET, null, e);
-			}
-			if(i < params.length - 1) res.append("&");
-		}
-
-		return res.toString();
 	}
 
 	// POST

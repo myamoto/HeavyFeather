@@ -2,13 +2,18 @@ package org.toolup.network.http;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
@@ -20,6 +25,7 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.http.ConnectionClosedException;
 import org.apache.http.Header;
 import org.apache.http.HttpHost;
 import org.apache.http.NameValuePair;
@@ -51,6 +57,8 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.protocol.HTTP;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.ssl.SSLContexts;
 import org.slf4j.Logger;
@@ -59,6 +67,7 @@ import org.toolup.app.IConfigurable;
 import org.toolup.app.ParamLoader;
 import org.toolup.io.properties.PropertiesUtilsException;
 import org.toolup.network.http.HTTPWrapperException.HTTPVERB;
+import org.toolup.network.http.json.HTTPJsonWrapper;
 
 import com.jayway.jsonpath.Configuration;
 
@@ -283,7 +292,7 @@ public class HTTPWrapper implements IConfigurable{
 		try(CloseableHttpResponse resp = httpDelete(url, httpClient, headers)){
 			return parseJson(resp);
 		} catch (UnsupportedOperationException | IOException e) {
-			throw new HTTPWrapperException(HTTPVERB.GET, url, e);
+			throw new HTTPWrapperException(HTTPVERB.DELETE, url, e);
 		}
 	}
 
@@ -404,6 +413,39 @@ public class HTTPWrapper implements IConfigurable{
 						.setProxy(new HttpHost(proxyHost, Integer.valueOf(proxyPort), "http")).build());
 			}
 		}
+	}
+	
+	public static String httpGetListParams(int limit, int offset, String limitParamName, String offsetParamName, NameValuePair... params) throws HTTPWrapperException {
+		List<NameValuePair> paramLst = new ArrayList<>();
+		if(params != null) 
+			paramLst.addAll(Arrays.asList(params));
+
+		if(limit > HTTPJsonWrapper.LIMIT_MAX_VALUE) 
+			throw new HTTPWrapperException(HTTPVERB.GET, null, null, String.format( "limit cannot excess %d.", HTTPJsonWrapper.LIMIT_MAX_VALUE));
+
+		paramLst.add(new BasicNameValuePair(limitParamName, Integer.toString(limit)));
+		paramLst.add(new BasicNameValuePair(offsetParamName, Integer.toString(offset)));
+
+		return queryParams(paramLst.toArray(new NameValuePair[paramLst.size()]));
+	}
+
+	public static String queryParams(NameValuePair... params) throws HTTPWrapperException {
+		List<NameValuePair> paramLst = new ArrayList<>();
+		if(params != null) paramLst.addAll(Arrays.asList(params));
+
+		StringBuilder res = new StringBuilder();
+		if(params == null || params.length == 0) return res.toString();
+		for (int i = 0; i < params.length; ++i) {
+			NameValuePair param = params[i];
+			try {
+				res.append(String.format("%s=%s", param.getName(), URLEncoder.encode(param.getValue(), "utf-8")));
+			} catch (UnsupportedEncodingException e) {
+				throw new HTTPWrapperException(HTTPVERB.GET, null, e);
+			}
+			if(i < params.length - 1) res.append("&");
+		}
+
+		return res.toString();
 	}
 
 	public static String fullUrl(String baseUrl, String params) {
