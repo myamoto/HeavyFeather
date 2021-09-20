@@ -105,13 +105,17 @@ public class HTTPJsonWrapper {
 	}
 
 	public <T> List<T> readList(CloseableHttpClient httpClient, HttpReqParam<T> param) throws HTTPWrapperException{
+		return readList(httpClient, param, "$.items[*]");
+	}
+	
+	public <T> List<T> readList(CloseableHttpClient httpClient, HttpReqParam<T> param, String jsonPath) throws HTTPWrapperException{
 		if(param == null) return null;
 		String url = param.getUrl();
 		try {
 			Object obj = httpGETParsedJsonDocument(url, httpClient);
 			List<T> result = new ArrayList<>();
 			if(obj == null) return result;
-			List<Object> res = JsonPath.read(obj, "$.items[*]");
+			List<Object> res = JsonPath.read(obj, jsonPath);
 			if(logger.isDebugEnabled()) logger.debug("readList {} ", url);
 			for (Object o : res) {
 				if(logger.isDebugEnabled()) logger.debug("  -> {}", objectMapper.writeValueAsString(o));
