@@ -484,15 +484,8 @@ public class HTTPWrapper implements IConfigurable{
 		return this;
 	}
 
-	/**
-	 * 
-	 * equivalent to "curl -k" in Java. Disable server authenticity check.
-	 * Make sure you only use this only on development environment or on unsensitive content.
-	 * 
-	 * @return
-	 * @throws HTTPWrapperException
-	 */
-	public static CloseableHttpClient createUnsecureSSLHttpsClient() throws HTTPWrapperException {
+	
+	public static PoolingHttpClientConnectionManager createUnsafeSSLHttpsConMngr() throws HTTPWrapperException {
 		try {
 			SSLContextBuilder builder = SSLContexts.custom();
 			builder.loadTrustMaterial(null, new TrustStrategy() {
@@ -532,11 +525,21 @@ public class HTTPWrapper implements IConfigurable{
 					.register("http", PlainConnectionSocketFactory.getSocketFactory())
 					.build();
 
-			PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager(scktFctryReg);
-			return HttpClients.custom().setConnectionManager(cm).build();
+			return new PoolingHttpClientConnectionManager(scktFctryReg);
 		}catch(NoSuchAlgorithmException | KeyStoreException | KeyManagementException ex) {
 			throw new HTTPWrapperException(null, null, ex);
 		}
+	}
+	/**
+	 * 
+	 * equivalent to "curl -k" in Java. Disable server authenticity check.
+	 * Make sure you only use this only on development environment or on unsensitive content.
+	 * 
+	 * @return
+	 * @throws HTTPWrapperException
+	 */
+	public static CloseableHttpClient createUnsecureSSLHttpsClient() throws HTTPWrapperException {
+		return HttpClients.custom().setConnectionManager(createUnsafeSSLHttpsConMngr()).build();
 	}
 
 	public static CloseableHttpClient createProxifiedHttpClient() {
