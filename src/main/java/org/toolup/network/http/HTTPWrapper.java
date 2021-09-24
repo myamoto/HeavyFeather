@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
+import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
@@ -487,45 +488,17 @@ public class HTTPWrapper implements IConfigurable{
 	
 	public static PoolingHttpClientConnectionManager createUnsafeSSLHttpsConMngr() throws HTTPWrapperException {
 		try {
-			SSLContextBuilder builder = SSLContexts.custom();
-			builder.loadTrustMaterial(null, new TrustStrategy() {
-				@Override
-				public boolean isTrusted(X509Certificate[] chain, String authType)
-						throws CertificateException {
-					return true;
-				}
-			});
-			SSLContext sslContext = builder.build();
-			SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(
-					sslContext, new X509HostnameVerifier() {
+			return new PoolingHttpClientConnectionManager(RegistryBuilder
+					.<ConnectionSocketFactory>create()
+					.register("https", new SSLConnectionSocketFactory(SSLContexts.custom().loadTrustMaterial(null, new TrustStrategy() {
 						@Override
-						public void verify(String host, SSLSocket ssl)
-								throws IOException {
-						}
-
-						@Override
-						public void verify(String host, X509Certificate cert)
-								throws SSLException {
-						}
-
-						@Override
-						public void verify(String host, String[] cns,
-								String[] subjectAlts) throws SSLException {
-						}
-
-						@Override
-						public boolean verify(String s, SSLSession sslSession) {
+						public boolean isTrusted(X509Certificate[] chain, String authType)
+								throws CertificateException {
 							return true;
 						}
-					});
-
-			Registry<ConnectionSocketFactory> scktFctryReg = RegistryBuilder
-					.<ConnectionSocketFactory>create()
-					.register("https", sslsf)
+					}).build(), (a, b) -> true))
 					.register("http", PlainConnectionSocketFactory.getSocketFactory())
-					.build();
-
-			return new PoolingHttpClientConnectionManager(scktFctryReg);
+					.build());
 		}catch(NoSuchAlgorithmException | KeyStoreException | KeyManagementException ex) {
 			throw new HTTPWrapperException(null, null, ex);
 		}
