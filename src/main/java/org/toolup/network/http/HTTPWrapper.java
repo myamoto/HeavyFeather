@@ -139,7 +139,7 @@ public class HTTPWrapper implements IConfigurable{
 				.setContentType(contentType);
 
 		try(CloseableHttpResponse resp = httpUpdt(req, httpClient)){
-			return parseJson(resp);
+			return getContentAsString(resp);
 		} catch (UnsupportedOperationException | IOException e) {
 			throw new HTTPWrapperException(HTTPVERB.POST, req.getUrl(), e);
 		}
@@ -165,7 +165,7 @@ public class HTTPWrapper implements IConfigurable{
 	public String httpPUTContent(String url, InputStream bodyIS, CloseableHttpClient httpClient
 			, List<? extends Header> headers, List<NameValuePair> parameters) throws HTTPWrapperException {
 		try(CloseableHttpResponse resp = httpPUT(url, bodyIS, httpClient, headers, parameters)){
-			return parseJson(resp);
+			return getContentAsString(resp);
 		} catch (UnsupportedOperationException | IOException e) {
 			throw new HTTPWrapperException(HTTPVERB.PUT, url, e);
 		}
@@ -192,7 +192,7 @@ public class HTTPWrapper implements IConfigurable{
 	public String httpPatchContent(String url, InputStream bodyIS, CloseableHttpClient httpClient
 			, List<? extends Header> headers, List<NameValuePair> parameters) throws HTTPWrapperException {
 		try(CloseableHttpResponse resp = httpPATCH(url, bodyIS, httpClient, headers, parameters)){
-			return parseJson(resp);
+			return getContentAsString(resp);
 		} catch (UnsupportedOperationException | IOException e) {
 			throw new HTTPWrapperException(HTTPVERB.PATCH, url, e);
 		}
@@ -251,7 +251,7 @@ public class HTTPWrapper implements IConfigurable{
 			if(!UPDATE_STATUSCODE_OK.contains(status)) {
 				String content;
 				try {
-					content = parseJson(result);
+					content = getContentAsString(result);
 				}catch(IOException e) {
 					content = null;
 				}
@@ -291,7 +291,7 @@ public class HTTPWrapper implements IConfigurable{
 
 	public String httpDeleteContent(String url, CloseableHttpClient httpClient, List<? extends Header> headers) throws HTTPWrapperException {
 		try(CloseableHttpResponse resp = httpDelete(url, httpClient, headers)){
-			return parseJson(resp);
+			return getContentAsString(resp);
 		} catch (UnsupportedOperationException | IOException e) {
 			throw new HTTPWrapperException(HTTPVERB.DELETE, url, e);
 		}
@@ -340,7 +340,7 @@ public class HTTPWrapper implements IConfigurable{
 
 	public String httpGetContent(String url, CloseableHttpClient httpClient, List<? extends Header> headers, HttpClientContext context) throws HTTPWrapperException {
 		try(CloseableHttpResponse resp = httpget(url, httpClient, headers, context)){
-			return parseJson(resp);
+			return getContentAsString(resp);
 		} catch (UnsupportedOperationException | IOException e) {
 			throw new HTTPWrapperException(HTTPVERB.GET, url, e);
 		}
@@ -356,7 +356,17 @@ public class HTTPWrapper implements IConfigurable{
 		return httpget(url, httpClient, headers, null);
 	}
 
-	CloseableHttpResponse httpget(String url, CloseableHttpClient httpClient, List<? extends Header> headers, HttpClientContext context) throws HTTPWrapperException {
+	public byte[] httpGetRaw(String url, CloseableHttpClient httpClient, List<? extends Header> headers, HttpClientContext context) throws HTTPWrapperException {
+		try {
+			return IOUtils.toByteArray(httpget(url, httpClient, headers, context).getEntity().getContent());
+		} catch (UnsupportedOperationException | IOException ex) {
+			throw new HTTPWrapperException(HTTPVERB.GET, url, ex);
+		}
+	}
+		
+		
+			
+	public CloseableHttpResponse httpget(String url, CloseableHttpClient httpClient, List<? extends Header> headers, HttpClientContext context) throws HTTPWrapperException {
 		HttpGet httpGet = new HttpGet(url);
 
 		handleProxy(httpGet);
@@ -379,7 +389,7 @@ public class HTTPWrapper implements IConfigurable{
 		if(!GET_STATUSCODE_OK.contains(status)) {
 			String content;
 			try {
-				content = parseJson(result);
+				content = getContentAsString(result);
 			}catch(IOException e) {
 				content = null;
 			}
@@ -400,7 +410,7 @@ public class HTTPWrapper implements IConfigurable{
 
 	//misc
 
-	private String parseJson(CloseableHttpResponse resp) throws IOException {
+	private String getContentAsString(CloseableHttpResponse resp) throws IOException {
 		return IOUtils.toString(resp.getEntity().getContent(), StandardCharsets.UTF_8);
 	}
 

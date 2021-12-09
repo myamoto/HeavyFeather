@@ -1,0 +1,80 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ----------------< org.toolup.heavyfeather:heavyfeather >----------------
+[INFO] Building heavyfeather 1.0.0
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- maven-dependency-plugin:2.8:tree (default-cli) @ heavyfeather ---
+[INFO] org.toolup.heavyfeather:heavyfeather:jar:1.0.0
+[INFO] +- javax.servlet:servlet-api:jar:2.3:provided
+[INFO] +- org.springframework.boot:spring-boot-starter-web:jar:2.4.4:provided
+[INFO] |  +- org.springframework.boot:spring-boot-starter:jar:2.4.4:provided
+[INFO] |  |  +- org.springframework.boot:spring-boot:jar:2.4.4:provided
+[INFO] |  |  +- org.springframework.boot:spring-boot-autoconfigure:jar:2.4.4:provided
+[INFO] |  |  +- org.springframework.boot:spring-boot-starter-logging:jar:2.4.4:provided
+[INFO] |  |  |  \- org.slf4j:jul-to-slf4j:jar:1.7.30:provided
+[INFO] |  |  +- jakarta.annotation:jakarta.annotation-api:jar:1.3.5:provided
+[INFO] |  |  +- org.springframework:spring-core:jar:5.3.5:provided
+[INFO] |  |  |  \- org.springframework:spring-jcl:jar:5.3.5:provided
+[INFO] |  |  \- org.yaml:snakeyaml:jar:1.27:provided
+[INFO] |  +- org.springframework.boot:spring-boot-starter-json:jar:2.4.4:provided
+[INFO] |  |  +- com.fasterxml.jackson.core:jackson-databind:jar:2.11.4:provided
+[INFO] |  |  |  +- com.fasterxml.jackson.core:jackson-annotations:jar:2.11.4:provided
+[INFO] |  |  |  \- com.fasterxml.jackson.core:jackson-core:jar:2.11.4:provided
+[INFO] |  |  +- com.fasterxml.jackson.datatype:jackson-datatype-jdk8:jar:2.11.4:provided
+[INFO] |  |  +- com.fasterxml.jackson.datatype:jackson-datatype-jsr310:jar:2.11.4:provided
+[INFO] |  |  \- com.fasterxml.jackson.module:jackson-module-parameter-names:jar:2.11.4:provided
+[INFO] |  +- org.springframework.boot:spring-boot-starter-tomcat:jar:2.4.4:provided
+[INFO] |  |  +- org.apache.tomcat.embed:tomcat-embed-core:jar:9.0.44:provided
+[INFO] |  |  +- org.glassfish:jakarta.el:jar:3.0.3:provided
+[INFO] |  |  \- org.apache.tomcat.embed:tomcat-embed-websocket:jar:9.0.44:provided
+[INFO] |  +- org.springframework:spring-web:jar:5.3.5:provided
+[INFO] |  |  \- org.springframework:spring-beans:jar:5.3.5:provided
+[INFO] |  \- org.springframework:spring-webmvc:jar:5.3.5:provided
+[INFO] |     +- org.springframework:spring-context:jar:5.3.5:provided
+[INFO] |     \- org.springframework:spring-expression:jar:5.3.5:provided
+[INFO] +- org.springframework.boot:spring-boot-starter-security:jar:2.4.4:provided
+[INFO] |  +- org.springframework:spring-aop:jar:5.3.5:provided
+[INFO] |  +- org.springframework.security:spring-security-config:jar:5.4.5:provided
+[INFO] |  |  \- org.springframework.security:spring-security-core:jar:5.4.5:provided
+[INFO] |  \- org.springframework.security:spring-security-web:jar:5.4.5:provided
+[INFO] +- com.sun.jersey:jersey-client:jar:1.19.4:provided
+[INFO] +- com.sun.jersey:jersey-core:jar:1.19.4:provided
+[INFO] +- org.slf4j:slf4j-api:jar:1.7.25:compile
+[INFO] +- org.apache.httpcomponents:httpcore:jar:4.4.9:compile
+[INFO] +- org.apache.httpcomponents:httpclient-win:jar:4.5.5:compile
+[INFO] |  +- net.java.dev.jna:jna:jar:4.4.0:compile
+[INFO] |  \- net.java.dev.jna:jna-platform:jar:4.4.0:compile
+[INFO] +- org.apache.httpcomponents:httpclient:jar:4.5.5:compile
+[INFO] |  \- commons-logging:commons-logging:jar:1.2:compile
+[INFO] +- org.apache.httpcomponents:httpasyncclient:jar:4.1.3:compile
+[INFO] |  \- org.apache.httpcomponents:httpcore-nio:jar:4.4.6:compile
+[INFO] +- javax.ws.rs:jsr311-api:jar:1.1.1:compile
+[INFO] +- com.jcraft:jsch:jar:0.1.55:compile
+[INFO] +- org.jsoup:jsoup:jar:1.7.2:compile
+[INFO] +- commons-codec:commons-codec:jar:1.5:compile
+[INFO] +- org.apache.commons:commons-text:jar:1.6:compile
+[INFO] |  \- org.apache.commons:commons-lang3:jar:3.8.1:compile
+[INFO] +- commons-net:commons-net:jar:3.3:compile
+[INFO] +- commons-io:commons-io:jar:2.5:compile
+[INFO] +- com.jayway.jsonpath:json-path:jar:2.4.0:compile
+[INFO] |  \- net.minidev:json-smart:jar:2.3:compile
+[INFO] |     \- net.minidev:accessors-smart:jar:1.2:compile
+[INFO] |        \- org.ow2.asm:asm:jar:5.0.4:compile
+[INFO] +- org.eclipse.jgit:org.eclipse.jgit:jar:5.7.0.202003110725-r:compile
+[INFO] |  +- com.jcraft:jzlib:jar:1.1.1:compile
+[INFO] |  +- com.googlecode.javaewah:JavaEWAH:jar:1.1.7:compile
+[INFO] |  +- org.bouncycastle:bcpg-jdk15on:jar:1.64:compile
+[INFO] |  +- org.bouncycastle:bcprov-jdk15on:jar:1.64:compile
+[INFO] |  \- org.bouncycastle:bcpkix-jdk15on:jar:1.64:compile
+[INFO] +- com.zaxxer:nuprocess:jar:2.0.0:compile
+[INFO] +- log4j:log4j:jar:1.2.17:test
+[INFO] +- junit:junit:jar:4.12:test
+[INFO] |  \- org.hamcrest:hamcrest-core:jar:1.3:test
+[INFO] \- org.slf4j:slf4j-log4j12:jar:1.7.25:test
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.007 s
+[INFO] Finished at: 2021-10-21T08:06:23+02:00
+[INFO] ------------------------------------------------------------------------

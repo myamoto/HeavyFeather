@@ -20,9 +20,9 @@ import org.slf4j.LoggerFactory;
 import org.toolup.devops.ci.git.gitlab.apiclient.GitProjectMemberShip.AccessLevel;
 import org.toolup.network.http.HTTPWrapper;
 import org.toolup.network.http.HTTPWrapperException;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.DeserializationConfig.Feature;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
 
 public class GitRESTClient {
@@ -40,7 +40,7 @@ public class GitRESTClient {
 	
 	private static final  ObjectMapper objectMapper = new ObjectMapper();
 	static {
-		objectMapper.configure(Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 	}
 	
 	protected void protectedmethod() {}

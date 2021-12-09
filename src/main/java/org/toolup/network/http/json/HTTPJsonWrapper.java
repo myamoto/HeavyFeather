@@ -10,16 +10,16 @@ import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.codehaus.jackson.JsonGenerationException;
-import org.codehaus.jackson.map.DeserializationConfig.Feature;
-import org.codehaus.jackson.map.JsonMappingException;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.toolup.network.http.HTTPWrapper;
 import org.toolup.network.http.HTTPWrapperException;
 import org.toolup.network.http.HTTPWrapperException.HTTPVERB;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
 
 public class HTTPJsonWrapper {
@@ -28,7 +28,7 @@ public class HTTPJsonWrapper {
 
 	private static final  ObjectMapper objectMapper = new ObjectMapper();
 	static {
-		objectMapper.configure(Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 	}
 
 	private final Logger logger = LoggerFactory.getLogger(HTTPJsonWrapper.class);
@@ -149,7 +149,11 @@ public class HTTPJsonWrapper {
 			throw new HTTPWrapperException(HTTPVERB.GET, urlBase, ex);
 		}
 	}
-
+	
+	public byte[] httpGetRaw(CloseableHttpClient httpClient, HttpReqParam<?> param) throws HTTPWrapperException {
+		return httpWrapper.httpGetRaw(param.getUrl(), httpClient, defaultHeaders, null);
+	}
+	
 	public Object httpGETParsedJsonDocument(String url, CloseableHttpClient httpClient) throws HTTPWrapperException {
 		try {
 			return httpWrapper.httpGETParsedJson(url, httpClient, defaultHeaders);
@@ -282,10 +286,10 @@ public class HTTPJsonWrapper {
 			return httpWrapper.httpPatchContent(url, body == null ? null : IOUtils.toInputStream(objectMapper.writeValueAsString(body), "utf-8") , httpClient, getHeaders(param.getHeadersArr()), null);
 		} catch(HTTPWrapperException e) {
 			handleSecurityException(e);
+			return null;
 		} catch (IOException ex) {
 			throw new HTTPWrapperException(HTTPVERB.PATCH, url, ex);
 		}
-		return null;
 	}
 
 	//DELETE

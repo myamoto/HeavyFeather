@@ -55,7 +55,25 @@
 			<version>1.19.4</version>
 			<scope>provided</scope>
 		</dependency>
-
+		<!-- jackson -->
+		<!-- <dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<version>2.11.4</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.datatype</groupId>
+			<artifactId>jackson-datatype-jdk8</artifactId>
+			<version>2.11.4</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.datatype</groupId>
+			<artifactId>jackson-datatype-jsr310</artifactId>
+			<version>2.11.4</version>
+			<scope>provided</scope>
+		</dependency> -->
 		<!-- LOG -->
 		<dependency>
 			<groupId>org.slf4j</groupId>
@@ -158,13 +176,6 @@
 
 		<!-- EO GIT SCM Client -->
 
-		<!-- JSon path + Jackson -->
-		<dependency>
-			<groupId>com.jayway.restassured</groupId>
-			<artifactId>json-path</artifactId>
-			<version>1.8.1</version>
-		</dependency>
-		<!-- EO JACKSON -->
 		<!-- NuProcess : dopped ProcessBuilder thanks brettwooldridge -->
 		<dependency>
 			<groupId>com.zaxxer</groupId>
