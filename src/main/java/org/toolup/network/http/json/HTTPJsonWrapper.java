@@ -112,11 +112,11 @@ public class HTTPJsonWrapper {
 		if(param == null) return null;
 		String url = param.getUrl();
 		try {
+			if(logger.isDebugEnabled()) logger.debug("readList {}...", url);
 			Object obj = httpGETParsedJsonDocument(url, httpClient);
 			List<T> result = new ArrayList<>();
 			if(obj == null) return result;
 			List<Object> res = JsonPath.read(obj, jsonPath);
-			if(logger.isDebugEnabled()) logger.debug("readList {} ", url);
 			for (Object o : res) {
 				if(logger.isDebugEnabled()) logger.debug("  -> {}", objectMapper.writeValueAsString(o));
 				result.add(objectMapper.readValue(objectMapper.writeValueAsString(o), param.getClazz()));
