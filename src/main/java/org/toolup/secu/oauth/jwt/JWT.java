@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public final class JWT {
+public class JWT {
 	
 	public enum STD_CLAIMS {jti, scope, sub, roles};
 	public static String REQ_ATTRBT = JWT.class.getSimpleName();
