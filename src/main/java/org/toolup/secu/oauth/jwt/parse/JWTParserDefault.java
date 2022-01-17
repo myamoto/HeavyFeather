@@ -62,8 +62,6 @@ public class JWTParserDefault extends JWTParserFactory{
 			if(logger.isDebugEnabled()) {
 				logger.debug("decoding header as  : {}", new String(Base64.decodeBase64(token1), CharEncoding.UTF_8));
 				logger.debug("parsed header as  : {}", header.toString());
-
-
 				logger.debug("decoding claims as  : {}", new String(Base64.decodeBase64(token2), CharEncoding.UTF_8));
 				logger.debug("parsed claims as  : {}", claims.toString());
 			}
