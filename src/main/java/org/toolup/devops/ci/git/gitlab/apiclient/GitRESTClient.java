@@ -376,7 +376,8 @@ public class GitRESTClient {
 		String url = getGitUrlUserById(userId);
 		Object userObj = httpGETParsedJsonDocument(url, httpClient);
 		String userName = ((Map<?,?>)userObj).get("username").toString();
-		String email = ((Map<?,?>)userObj).get("public_email").toString();
+		Object mailVal = ((Map<?,?>)userObj).get("public_email");
+		String email = mailVal == null ? null : mailVal.toString();
 		if(email == null || email.isEmpty())
 			logger.warn("public_email was empty for user {} on {}", userName, url);
 		return new GitUser()
