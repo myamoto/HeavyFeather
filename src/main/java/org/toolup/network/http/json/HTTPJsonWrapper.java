@@ -12,6 +12,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.toolup.network.http.HTTPWrapper;
 import org.toolup.network.http.HTTPWrapperException;
 import org.toolup.network.http.HTTPWrapperException.HTTPVERB;
@@ -118,7 +119,7 @@ public class HTTPJsonWrapper {
 			if(obj == null) return result;
 			List<Object> res = JsonPath.read(obj, jsonPath);
 			for (Object o : res) {
-				if(logger.isDebugEnabled()) logger.debug("  -> {}", objectMapper.writeValueAsString(o));
+				if(logger.isTraceEnabled()) logger.trace("  -> {}", objectMapper.writeValueAsString(o));
 				result.add(objectMapper.readValue(objectMapper.writeValueAsString(o), param.getClazz()));
 			}
 			return result;
@@ -181,11 +182,9 @@ public class HTTPJsonWrapper {
 			if(resp == null) return result;
 
 			List<Object> res = JsonPath.read(resp, listJsonPath);
-			if(logger.isDebugEnabled())
-				logger.debug("postList {}", url);
 			for (Object o : res) {
-				if(logger.isDebugEnabled())
-					logger.debug("  -> {} adding result {}", url, objectMapper.writeValueAsString(o));
+				if(logger.isTraceEnabled())
+					logger.trace("  -> {} adding result {}", url, objectMapper.writeValueAsString(o));
 
 				result.add(objectMapper.readValue(objectMapper.writeValueAsString(o), param.getClazz()));
 			}
@@ -252,7 +251,12 @@ public class HTTPJsonWrapper {
 		String url = param.getUrl();
 		try {
 			InputStream body = param.getBody() == null ? null : IOUtils.toInputStream(objectMapper.writeValueAsString(param.getBody()), "utf-8");
-			return httpWrapper.httpPUTContent(url, body , httpClient, getHeaders(param.getHeadersArr()), null);
+			if(logger.isDebugEnabled())
+				logger.debug("httpPUT {}   -> req-body : {}", param.getUrl(), objectMapper.writeValueAsString(param.getBody()));
+			String result = httpWrapper.httpPUTContent(url, body , httpClient, getHeaders(param.getHeadersArr()), null);
+			if(logger.isDebugEnabled())
+				logger.debug("httpPUT {}   -> resp : {}", param.getUrl(), result);
+			return result;
 		} catch(HTTPWrapperException e) {
 			handleSecurityException(e);
 		} catch (IOException ex) {
@@ -338,9 +342,9 @@ public class HTTPJsonWrapper {
 
 	public void handleSecurityException(HTTPWrapperException e) throws HTTPWrapperException {
 		if(e.getStatusCode() == 401) {
-			throw new HTTPWrapperException(e.getVerb(), e.getUrl(), e, "Unauthorized : make sure your API credentials are valid.");
+			throw new HTTPWrapperException(e.getVerb(), null, e.getStatusCode(), e.getUrl(), null, e, "Unauthorized : make sure your API credentials are valid.");
 		}else if(e.getStatusCode() == 403) {
-			throw new HTTPWrapperException(e.getVerb(), e.getUrl(), e, "Forbidden : make sure your user has admin priviledges..");
+			throw new HTTPWrapperException(e.getVerb(), null, e.getStatusCode(), e.getUrl(), null, e, "Forbidden : make sure your user has admin priviledges..");
 		}else {
 			throw e;
 		}

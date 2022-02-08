@@ -397,7 +397,8 @@ public class HTTPWrapper implements IConfigurable{
 	//misc
 
 	private String getContentAsString(CloseableHttpResponse resp) throws IOException {
-		return IOUtils.toString(resp.getEntity().getContent(), StandardCharsets.UTF_8);
+		return resp == null || resp.getEntity() == null || resp.getEntity().getContent() == null ? 
+				null : IOUtils.toString(resp.getEntity().getContent(), StandardCharsets.UTF_8);
 	}
 
 	private void handleProxy(HttpRequestBase httpRequest) {

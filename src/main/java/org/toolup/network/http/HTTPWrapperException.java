@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.apache.http.Header;
+import org.springframework.http.HttpStatus;
 
 
 public class HTTPWrapperException extends AbstractHttpException{
@@ -42,7 +43,7 @@ public class HTTPWrapperException extends AbstractHttpException{
 	}
 	
 	public HTTPWrapperException(HTTPVERB verb, String url, Throwable t, String msg) {
-		this(verb, null, -1, url, null, t, msg);
+		this(verb, null, HttpStatus.INTERNAL_SERVER_ERROR.value(), url, null, t, msg);
 	}
 	
 	public HTTPWrapperException(HTTPVERB verb, String url, Throwable t) {
