@@ -68,12 +68,12 @@ public class JWTParserDefault extends JWTParserFactory{
 			StringBuilder errors = new StringBuilder();
 			long now = System.currentTimeMillis();
 			Object nbfObj = claims.get("nbf");
-			if(nbfObj == null || !Long.class.isAssignableFrom(nbfObj.getClass()))
-				errors.append("\nmandatory claim 'nbf' should be a long. it is of type " + nbfObj.getClass());
+//			if(nbfObj == null || !Long.class.isAssignableFrom(nbfObj.getClass()))
+//				errors.append("\nmandatory claim 'nbf' should be a long. it is of type " + nbfObj.getClass());
 
 			Object expObj = claims.get("exp");
-			if(expObj == null || !Long.class.isAssignableFrom(expObj.getClass()))
-				errors.append("\nmandatory claim  'exp' should be a long. it is of type " + expObj.getClass());
+//			if(expObj == null || !Long.class.isAssignableFrom(expObj.getClass()))
+//				errors.append("\nmandatory claim  'exp' should be a long. it is of type " + expObj.getClass());
 
 
 			Object kidObj = claims.get("kid");
@@ -83,8 +83,8 @@ public class JWTParserDefault extends JWTParserFactory{
 			if(!errors.toString().isEmpty())
 				throw new OAuthException("invalid JWT : " + errors.toString());
 
-			long notBefore = getTimeMillis((long) nbfObj);
-			long notOnOrAfter = getTimeMillis((long) expObj);
+			long notBefore = getTimeMillis(nbfObj);
+			long notOnOrAfter = getTimeMillis(expObj);
 
 			Signature signature = Signature.getInstance("SHA256withRSA");
 
@@ -113,6 +113,8 @@ public class JWTParserDefault extends JWTParserFactory{
 		}
 	}
 
-	private static long getTimeMillis(final long time) { return (time > 99999999999L) ? time : time * 1000; }
+	private static long getTimeMillis(final Object time) { 
+		long valLong = (time instanceof Long) ? (Long) time : new Long((Integer) time);
+		return (valLong > 99999999999L) ? valLong : valLong * 1000; }
 
 }

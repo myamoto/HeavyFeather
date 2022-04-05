@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.NameValuePair;
 import org.apache.http.auth.AuthScope;
@@ -40,6 +41,7 @@ import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustStrategy;
+import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicCredentialsProvider;
@@ -201,14 +203,27 @@ public class HTTPWrapper implements IConfigurable{
 		List<? extends Header> headers = req.getHeaders();
 		List<NameValuePair> parameters = req.getParameters();
 		HttpClientContext context = req.getContext();
-		ContentType contentType = req.getContentType() != null ? req.getContentType() : ContentType.APPLICATION_JSON;
+		
+		ContentType contentType = req.getContentType() != null ? req.getContentType() : 
+			req.getHeaders() != null && req.getHeaders().stream().anyMatch(h -> h.getName().equals("Content-Type")) ?
+					ContentType.parse(req.getHeaders().stream().filter(h -> h.getName().equals("Content-Type")).findFirst().get().getValue()) :ContentType.APPLICATION_JSON;
 		handleProxy(httpReq);
 		if(bodyIS != null) {
 			try {
-				String bodyContent = IOUtils.toString(bodyIS, StandardCharsets.UTF_8);
-				StringEntity body = new StringEntity(bodyContent, contentType);
-				httpReq.setEntity(body);
+				HttpEntity entity;
+				if(contentType.toString().equalsIgnoreCase(ContentType.APPLICATION_OCTET_STREAM.toString())) {
+					entity = new ByteArrayEntity(IOUtils.toByteArray(bodyIS));
+				}else {
+					entity = new StringEntity(IOUtils.toString(bodyIS, StandardCharsets.UTF_8), contentType);
+				}
+				httpReq.setEntity(entity);
 			} catch (IOException e) {
+				throw new HTTPWrapperException(HTTPVERB.from(httpReq.getMethod()), url, e);
+			}
+		}else if(parameters != null && !parameters.isEmpty()) {
+			try {
+				httpReq.setEntity(new UrlEncodedFormEntity(parameters, "UTF-8"));
+			} catch (UnsupportedEncodingException e) {
 				throw new HTTPWrapperException(HTTPVERB.from(httpReq.getMethod()), url, e);
 			}
 		}
@@ -220,13 +235,7 @@ public class HTTPWrapper implements IConfigurable{
 		}
 
 
-		if(parameters != null && !parameters.isEmpty()) {
-			try {
-				httpReq.setEntity(new UrlEncodedFormEntity(parameters, "UTF-8"));
-			} catch (UnsupportedEncodingException e) {
-				throw new HTTPWrapperException(HTTPVERB.from(httpReq.getMethod()), url, e);
-			}
-		}
+		
 		try {
 			CloseableHttpResponse result;
 

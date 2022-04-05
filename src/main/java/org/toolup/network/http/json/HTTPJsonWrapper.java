@@ -8,11 +8,11 @@ import java.util.List;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
+import org.apache.http.NameValuePair;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 import org.toolup.network.http.HTTPWrapper;
 import org.toolup.network.http.HTTPWrapperException;
 import org.toolup.network.http.HTTPWrapperException.HTTPVERB;
@@ -227,6 +227,11 @@ public class HTTPJsonWrapper {
 			throw new HTTPWrapperException(HTTPVERB.POST, param.getUrl(), ex);
 		}
 		return null;
+	}
+	
+	public CloseableHttpResponse httpPOSTRaw(String url, InputStream bodyIS, CloseableHttpClient httpClient
+			, List<? extends Header> headers, List<NameValuePair> parameters) throws HTTPWrapperException {
+		return httpWrapper.httpPOST(url, bodyIS, httpClient, getHeaders(headers.toArray(new Header[headers.size()])), parameters, null);
 	}
 
 	//PATCH
