@@ -6,27 +6,44 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public final class JWT {
+public class JWT {
 	
 	public enum STD_CLAIMS {jti, scope, sub, roles};
 	public static String REQ_ATTRBT = JWT.class.getSimpleName();
 	
 	public static List<String> RESERVED_CLAIMS = Arrays.asList("iat", "nbf", "exp", "aud", "iss", "jti", "sub", "scope", "roles");
-
+	public static List<String> FILTER_CLAIMS = Arrays.asList("iat", "nbf", "exp", "scope", "roles");
+	
+	
 	private String token;
 	private JSONObject header;
 	private JSONObject claims;
+	
+	public JWT setToken(String token) {
+		this.token = token;
+		return this;
+	}
 	
 	public JWT token(String token) {
 		this.token = token;
 		return this;
 	}
-
+	
+	public JWT setHeader(JSONObject header) {
+		this.header = header;
+		return this;
+	}
+	
 	public JWT header(JSONObject header) {
 		this.header = header;
 		return this;
 	}
-
+	
+	public JWT setClaims(JSONObject claims) {
+		this.claims = claims;
+		return this;
+	}
+	
 	public JWT claims(JSONObject claims) {
 		this.claims = claims;
 		return this;
@@ -34,10 +51,11 @@ public final class JWT {
 
 	public Map<String, String> getClaims() {
 		return claims == null || claims.get() == null ? null : 
-			claims.get().entrySet()
+			claims.get()
+			.entrySet()
 			.stream()
-			.filter(e -> RESERVED_CLAIMS.contains(e.getKey()))
-			.collect(Collectors.toMap(map -> (String)map.getKey(), map -> (String)map.getValue()));
+			.filter(e -> !FILTER_CLAIMS.contains(e.getKey()))
+			.collect(Collectors.toMap(map -> (String)map.getKey(), map -> String.valueOf(map.getValue())));
 	}
 
 	public String getID() {

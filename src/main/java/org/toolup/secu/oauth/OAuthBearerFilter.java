@@ -98,7 +98,9 @@ public final class OAuthBearerFilter implements Filter {
 
 		try {
 			if(jwtBuilder.getPublicKeys().isEmpty() && jwtBuilder.getDefaultPublicKey() == null)
-				throw new OAuthException("Error initializing JWTBuilderFactory : keys were  empty", 500);
+				throw new OAuthException("Error initializing JWTBuilderFactory : keys were empty", 500);
+			
+			logger.debug("public keys : {}", jwtBuilder.getPublicKeys());
 		} catch (OAuthException e) {
 			throw new OAuthException("Error initializing JWT Builder : keys could not be retrieved", e, 500);
 		}		

@@ -1,0 +1,93 @@
+{
+	"configuration": {
+		"status": "error",
+		"name": "RoutingTest",
+		"ThresholdFilter": {
+			"level": "debug"
+		},
+		"appenders": {
+			"Console": {
+                "name": "STDOUT",
+                "PatternLayout": {
+                    "pattern": "%d [%t] %-5p %c - %m%n"
+                }
+            }
+		},
+		
+		"loggers": {
+			"root": {
+				"level": "error",
+				"AppenderRef": {
+					"ref": "STDOUT"
+				}
+			},
+			"logger": [
+				{
+					"name": "org.springframework",
+					"level": "info",
+					"additivity": "false",
+					"AppenderRef": {
+							"ref": "STDOUT"
+					}
+				},
+				{
+					"name": "org.springframework.web",
+					"level": "trace",
+					"additivity": "false",
+					"AppenderRef": {
+							"ref": "STDOUT"
+					}
+				},
+				{
+					"name": "org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping",
+					"level": "trace",
+					"additivity": "false",
+					"AppenderRef": {
+							"ref": "STDOUT"
+					}
+				},
+				{
+					"name": "org.toolup.network",
+					"level": "debug",
+					"additivity": "false",
+					"AppenderRef": {
+						"ref": "STDOUT"
+					}
+				},
+				{
+					"name": "org.toolup.network.common.JSchLogger",
+					"level": "error",
+					"additivity": "false",
+					"AppenderRef": {
+						"ref": "STDOUT"
+					}
+				},
+				{
+					"name": "org.toolup.secu.oauth.jwt.parse",
+					"level": "debug",
+					"additivity": "false",
+					"AppenderRef": {
+						"ref": "STDOUT"
+					}
+				},
+				{
+					"name": "org.toolup.network.http.json.HTTPJsonWrapper",
+					"level": "debug",
+					"additivity": "false",
+					"AppenderRef": {
+						"ref": "STDOUT"
+					}
+				},
+				{
+					"name": "cnaf.secuapp.app.secutech.dns.dao",
+					"level": "debug",
+					"additivity": "false",
+					"AppenderRef": {
+						"ref": "STDOUT"
+					}
+				}
+			]
+		}
+	}
+}
+

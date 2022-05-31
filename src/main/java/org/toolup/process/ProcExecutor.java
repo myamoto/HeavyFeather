@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -31,8 +32,8 @@ public class ProcExecutor implements Closeable{
 
 	private final String name;
 	private final AtomicInteger nbExec = new AtomicInteger(0);
-	private final AtomicBoolean lock = new AtomicBoolean(false);
-	private String lockReason;
+	
+	private final Map<String, WorkspaceLock> locks = new HashMap<String, WorkspaceLock>();
 
 	public ProcExecutor(String name, ExecutorService procExecutorService, ThreadPoolExecutor stderrGobblerService, ThreadPoolExecutor stdoutGobblerService) {
 		this.name = name;
@@ -48,42 +49,46 @@ public class ProcExecutor implements Closeable{
 		this.stdoutGobblerService = Executors.newFixedThreadPool(nbMaxConcurrentExecs);
 		this.procExecutorService = Executors.newFixedThreadPool(nbMaxConcurrentExecs);
 	}
-	public  void lock(String lockReason) {
-		if(!lock.getAndSet(true)) {
-			synchronized (this) {
-				this.lockReason = lockReason;
-			}
+	
+	private synchronized WorkspaceLock getLock(String workspace) {
+		if(!locks.containsKey(workspace)) {
+				locks.put(workspace, new WorkspaceLock()
+						.setLock(new AtomicBoolean(false)));
+		}
+		return locks.get(workspace);
+	}
+	
+	public  void lock(String workspace, String lockReason) {
+		WorkspaceLock wkspcLck = getLock(workspace);
+		if(!wkspcLck.getLock().getAndSet(true)) {
+			wkspcLck.setReason(lockReason);
 		}
 	}
 
-	public  void unlock() {
-		lock.set(false);
-		synchronized (this) {
-			this.lockReason = null;
-		}
+	public void unlock(String workspace) {
+		getLock(workspace)
+			.setReason(null)
+			.getLock().set(false);
 	}
-
-	public boolean isRunning() {
-		return nbExec.get() > 0;
-	}
-
-	public ProcExecFuture processExec(String runInPath, StringBuffer customBuffer, String... commands) throws ProcExecutorException { 
-		return processExec(runInPath, customBuffer, null, null, commands); 
+	
+	public ProcExecFuture processExec(String workspace,String runInPath, StringBuffer customBuffer, String... commands) throws ProcExecutorException { 
+		return processExec(workspace, runInPath, customBuffer, null, null, commands); 
 	} 
 	
-	public ProcExecFuture processExec(String runInPath, StringBuffer customBuffer
+	public ProcExecFuture processExec(String workspace,String runInPath, StringBuffer customBuffer
 			, Callback<String> startCmdCallback, Callback<Process> processCreatedCallback
 			, String... commands) throws ProcExecutorException {
-		return processExec(runInPath, customBuffer, startCmdCallback, processCreatedCallback, null, commands);
+		return processExec(workspace, runInPath, customBuffer, startCmdCallback, processCreatedCallback, null, commands);
 	}
 
-	public ProcExecFuture processExec(String runInPath, StringBuffer customBuffer
+	public ProcExecFuture processExec(String workspace, String runInPath, StringBuffer customBuffer
 			, Callback<String> startCmdCallback, Callback<Process> processCreatedCallback
 			, Map<String, String> envts
 			, String... commands) throws ProcExecutorException {
 		Process p;
-		if (this.lock.get()) {
-			throw new ProcExecutorException(String.format("ProcessExecutor <%s> : locked. reason : %s ", new Object[] { this.name, this.lockReason }));
+		WorkspaceLock wkspcLck = getLock(workspace);
+		if (wkspcLck.getLock().get()) {
+			throw new ProcExecutorException(String.format("ProcessExecutor <%s> : locked. reason : %s ", new Object[] { this.name, wkspcLck.getReason()}));
 		}
 
 		StringBuffer outBuffer;
@@ -215,4 +220,22 @@ public class ProcExecutor implements Closeable{
 		if(es.isTerminated() && !es.isShutdown())es.shutdown();
 	}
 
+	private class WorkspaceLock{
+		private AtomicBoolean lock;
+		private String reason;
+		public AtomicBoolean getLock() {
+			return lock;
+		}
+		public WorkspaceLock setLock(AtomicBoolean lock) {
+			this.lock = lock;
+			return this;
+		}
+		public String getReason() {
+			return reason;
+		}
+		public WorkspaceLock setReason(String reason) {
+			this.reason = reason;
+			return this;
+		}
+	}
 }

@@ -1,12 +1,12 @@
 package org.toolup.io.json;
 
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.DeserializationConfig.Feature;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class ObjectMapperHolder {
 	private static final  ObjectMapper objectMapper = new ObjectMapper();
 	static {
-		objectMapper.configure(Feature.FAIL_ON_UNKNOWN_PROPERTIES, true);
+		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
 	}
 	
 	private ObjectMapperHolder() {}

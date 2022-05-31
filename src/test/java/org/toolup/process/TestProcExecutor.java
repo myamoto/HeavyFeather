@@ -21,7 +21,7 @@ public class TestProcExecutor {
 		int returncode = -1;
 		try (ProcExecutor exec = new ProcExecutor("test", 10 )){
 			StringBuffer out = new StringBuffer();
-			final ProcExecFuture fut = exec.processExec(".", out, cmd, "5");
+			final ProcExecFuture fut = exec.processExec("default", ".", out, cmd, "5");
 			
 			new Thread(() -> {
 				while(fut.getProcess().isAlive()) {
