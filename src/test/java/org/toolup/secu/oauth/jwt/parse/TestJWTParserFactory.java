@@ -1,5 +1,7 @@
 package org.toolup.secu.oauth.jwt.parse;
 
+import java.io.IOException;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -8,7 +10,6 @@ import org.toolup.secu.oauth.OAuthException;
 import org.toolup.secu.oauth.jwt.JWT;
 import org.toolup.secu.oauth.jwt.parse.keys.UrlKeyCache;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -30,7 +31,7 @@ public class TestJWTParserFactory {
 		
 		try {
 			logger.info("jwt : {}", objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(jwt));
-		} catch (JsonProcessingException e) {
+		} catch (IOException e) {
 			logger.error("{}", e);
 			Assert.fail(e.getMessage());
 		}

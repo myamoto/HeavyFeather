@@ -21,21 +21,22 @@ import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
 
 public class HTTPJsonWrapper {
 
 	public static final int LIMIT_MAX_VALUE = 50;
 
-	private static final  ObjectMapper objectMapper = new ObjectMapper();
+	protected static final  ObjectMapper objectMapper = new ObjectMapper();
 	static {
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 	}
 
-	private final Logger logger = LoggerFactory.getLogger(HTTPJsonWrapper.class);
-	private final HTTPWrapper httpWrapper = new HTTPWrapper();
+	protected final Logger logger = LoggerFactory.getLogger(HTTPJsonWrapper.class);
+	protected final HTTPWrapper httpWrapper = new HTTPWrapper();
 
-	private final List<Header> defaultHeaders;
+	protected final List<Header> defaultHeaders;
 
 	private String limitParamName = "limit";
 	private String offsetParamName = "offset";
@@ -105,17 +106,15 @@ public class HTTPJsonWrapper {
 		}
 	}
 
-	public <T> List<T> readList(CloseableHttpClient httpClient, HttpReqParam<T> param) throws HTTPWrapperException{
-		return readList(httpClient, param, "$.items[*]");
-	}
 	
-	public <T> List<T> readList(CloseableHttpClient httpClient, HttpReqParam<T> param, String jsonPath) throws HTTPWrapperException{
+	public <T> HTTPJsonListResponse<T> readListResp(CloseableHttpClient httpClient, HttpReqParam<T> param, String jsonPath) throws HTTPWrapperException{
 		if(param == null) return null;
 		String url = param.getUrl();
-		try {
-			if(logger.isDebugEnabled()) logger.debug("readList {}...", url);
-			Object obj = httpGETParsedJsonDocument(url, httpClient);
-			List<T> result = new ArrayList<>();
+		if(logger.isDebugEnabled()) logger.debug("readList {}...", url);
+		try (CloseableHttpResponse resp = httpWrapper.httpget(url, httpClient, defaultHeaders)){
+			Object obj = Configuration.defaultConfiguration().jsonProvider().parse(httpWrapper.getContentAsString(resp));
+			HTTPJsonListResponse<T> result = new HTTPJsonListResponse<T>()
+					.setHeaders(Arrays.asList(resp.getAllHeaders()));
 			if(obj == null) return result;
 			List<Object> res = JsonPath.read(obj, jsonPath);
 			for (Object o : res) {
@@ -126,6 +125,16 @@ public class HTTPJsonWrapper {
 		}catch(IOException ex) {
 			throw new HTTPWrapperException(HTTPVERB.GET, url, ex);
 		}
+	}
+
+	
+	public <T> List<T> readList(CloseableHttpClient httpClient, HttpReqParam<T> param) throws HTTPWrapperException{
+		return readList(httpClient, param, "$.items[*]");
+	}
+	
+	public <T> List<T> readList(CloseableHttpClient httpClient, HttpReqParam<T> param, String jsonPath) throws HTTPWrapperException{
+		HTTPJsonListResponse<T> r = readListResp(httpClient, param, jsonPath);
+		return r == null ? null : r.getList();
 	}
 
 	public <T> List<T> readAll(CloseableHttpClient httpClient, HttpReqParam<T> param) throws HTTPWrapperException{
@@ -150,6 +159,8 @@ public class HTTPJsonWrapper {
 			throw new HTTPWrapperException(HTTPVERB.GET, urlBase, ex);
 		}
 	}
+	
+	
 	
 	public byte[] httpGetRaw(CloseableHttpClient httpClient, HttpReqParam<?> param) throws HTTPWrapperException {
 		return httpWrapper.httpGetRaw(param.getUrl(), httpClient, defaultHeaders, null);

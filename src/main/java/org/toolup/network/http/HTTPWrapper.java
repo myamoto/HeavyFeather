@@ -347,7 +347,7 @@ public class HTTPWrapper implements IConfigurable{
 	}
 
 
-	CloseableHttpResponse httpget(String url, CloseableHttpClient httpClient, List<? extends Header> headers) throws HTTPWrapperException {
+	public CloseableHttpResponse httpget(String url, CloseableHttpClient httpClient, List<? extends Header> headers) throws HTTPWrapperException {
 		return httpget(url, httpClient, headers, null);
 	}
 
@@ -405,7 +405,7 @@ public class HTTPWrapper implements IConfigurable{
 
 	//misc
 
-	private String getContentAsString(CloseableHttpResponse resp) throws IOException {
+	public String getContentAsString(CloseableHttpResponse resp) throws IOException {
 		return resp == null || resp.getEntity() == null || resp.getEntity().getContent() == null ? 
 				null : IOUtils.toString(resp.getEntity().getContent(), StandardCharsets.UTF_8);
 	}
