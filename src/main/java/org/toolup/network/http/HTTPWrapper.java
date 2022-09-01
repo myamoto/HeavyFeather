@@ -81,6 +81,13 @@ public class HTTPWrapper implements IConfigurable{
 
 	private static final List<Integer> GET_STATUSCODE_OK = Arrays.asList(200, 206);
 
+	private int limitMaxVal = HTTPJsonWrapper.DEFAULT_LIMIT_MAX_VALUE;
+	
+	public HTTPWrapper limitMaxVal(int limitMaxVal) {
+		this.limitMaxVal = limitMaxVal;
+		return this;
+	}
+
 	public HTTPWrapper useProxy(boolean useProxy) {
 		this.useProxy = useProxy;
 		return this;
@@ -422,13 +429,13 @@ public class HTTPWrapper implements IConfigurable{
 		}
 	}
 	
-	public static String httpGetListParams(int limit, int offset, String limitParamName, String offsetParamName, NameValuePair... params) throws HTTPWrapperException {
+	public String httpGetListParams(int limit, int offset, String limitParamName, String offsetParamName, NameValuePair... params) throws HTTPWrapperException {
 		List<NameValuePair> paramLst = new ArrayList<>();
 		if(params != null) 
 			paramLst.addAll(Arrays.asList(params));
 
-		if(limit > HTTPJsonWrapper.LIMIT_MAX_VALUE) 
-			throw new HTTPWrapperException(HTTPVERB.GET, null, null, String.format( "limit cannot excess %d.", HTTPJsonWrapper.LIMIT_MAX_VALUE));
+		if(limit > limitMaxVal) 
+			throw new HTTPWrapperException(HTTPVERB.GET, null, null, String.format( "limit cannot excess %d.", limitMaxVal));
 
 		paramLst.add(new BasicNameValuePair(limitParamName, Integer.toString(limit)));
 		paramLst.add(new BasicNameValuePair(offsetParamName, Integer.toString(offset)));
