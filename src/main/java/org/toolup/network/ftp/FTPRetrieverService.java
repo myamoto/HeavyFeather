@@ -79,7 +79,10 @@ public class FTPRetrieverService{
 				if(o instanceof ZipEntry){
 					ZipEntry ze = (ZipEntry)o;
 					String fileName = ze.getName();
-					File newFile = new File(outputFolderToUse + File.separator + fileName);
+					File newFile = new File(outputFolderToUse, fileName);
+					if(!newFile.toPath().normalize().startsWith(outputFolderToUse)) {
+						throw new IOException("Bad zip entry");
+					}
 					if(ze.isDirectory()){
 						newFile.mkdirs();
 					}else{
