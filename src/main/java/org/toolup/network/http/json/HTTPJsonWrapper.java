@@ -168,7 +168,7 @@ public class HTTPJsonWrapper {
 			}
 			return result;
 		} catch (HTTPWrapperException ex) {
-			throw new HTTPWrapperException(HTTPVERB.GET, urlBase, ex);
+			throw new HTTPWrapperException(HTTPVERB.GET, ex.getxError(), ex.getHttpStatus(), urlBase, ex.getResponseContent(), ex, ex.getMessage(), ex.getHeaderList().toArray(new Header[ex.getHeaderList().size()]));
 		}
 	}
 	

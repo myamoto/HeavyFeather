@@ -60,7 +60,7 @@ import org.toolup.network.http.json.HTTPJsonWrapper;
 
 import com.jayway.jsonpath.Configuration;
 
-public class HTTPWrapper implements IConfigurable{
+public class HTTPWrapper implements IConfigurable<HTTPWrapper>{
 
 	private final static HTTPWrapper defaultInstance = new HTTPWrapper();
 
@@ -241,8 +241,6 @@ public class HTTPWrapper implements IConfigurable{
 			}
 		}
 
-
-		
 		try {
 			CloseableHttpResponse result;
 

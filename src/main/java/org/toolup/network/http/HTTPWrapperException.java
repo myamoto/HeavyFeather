@@ -63,6 +63,10 @@ public class HTTPWrapperException extends AbstractHttpException{
 				, getHeadersString());
 	}
 	
+	public String getxError() {
+		return xError;
+	}
+
 	public HTTPVERB getVerb() {
 		return verb;
 	}
@@ -73,6 +77,10 @@ public class HTTPWrapperException extends AbstractHttpException{
 
 	private String getHeadersString() {
 		return headerList != null ? headerList.toString() : "";
+	}
+	
+	public List<Header> getHeaderList() {
+		return headerList;
 	}
 
 	public String getResponseContent() {
