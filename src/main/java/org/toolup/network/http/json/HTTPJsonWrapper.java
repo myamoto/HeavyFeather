@@ -26,7 +26,6 @@ import com.jayway.jsonpath.JsonPath;
 
 public class HTTPJsonWrapper {
 
-	public static final int LIMIT_MAX_VALUE = 50;
 
 	protected static final  ObjectMapper objectMapper = new ObjectMapper();
 	static {
@@ -41,11 +40,18 @@ public class HTTPJsonWrapper {
 	private String limitParamName = "limit";
 	private String offsetParamName = "offset";
 
-
+	public static final int DEFAULT_LIMIT_MAX_VALUE = 50;
+	private int limitMaxVal = DEFAULT_LIMIT_MAX_VALUE;
+	
 	public HTTPJsonWrapper() {
 		defaultHeaders = new ArrayList<Header>();
 	}
-
+	
+	public HTTPJsonWrapper limitMaxVal(int limitMaxVal) {
+		this.limitMaxVal = limitMaxVal;
+		this.httpWrapper.limitMaxVal(limitMaxVal);
+		return this;
+	}
 
 	public HTTPJsonWrapper limitParamName(String limitParamName) {
 		this.limitParamName = limitParamName;
@@ -88,6 +94,13 @@ public class HTTPJsonWrapper {
 		return this;
 	}
 
+	public String httpGetListParams(int limit, int offset, NameValuePair[] params) throws HTTPWrapperException {
+		return httpWrapper.httpGetListParams(limit, offset
+				, getLimitParamName()
+				, getOffsetParamName()
+				, params);
+	}
+	
 	// GET
 
 	public <T> T readSingle(CloseableHttpClient httpClient, HttpReqParam<T> param) throws HTTPWrapperException {
@@ -142,15 +155,14 @@ public class HTTPJsonWrapper {
 		String urlBase = param.getUrl();
 		try {
 			List<T> result = new ArrayList<>();
-
 			if(urlBase.contains("?")) 
-				throw new HTTPWrapperException(HTTPVERB.GET, urlBase, null, "baseUrl param must not contain '?'.");
-			int limit = LIMIT_MAX_VALUE;
+				throw new HTTPWrapperException(HTTPVERB.GET, urlBase, null, "baseUrl param must not contain '?' : please pass any GET param via the 'param' method parameter.");
+			int limit = limitMaxVal;
 			for(int i= 0 ; ; ++i) {
 				int offset = limit * i;
 
 				List<T> subResLst = readList(httpClient, param.clone()
-						.setUrl(HTTPWrapper.fullUrl(urlBase, HTTPWrapper.httpGetListParams(limit, offset, limitParamName, offsetParamName, param.getReqParamsArr()))));
+						.setUrl(HTTPWrapper.fullUrl(urlBase, httpWrapper.httpGetListParams(limit, offset, limitParamName, offsetParamName, param.getReqParamsArr()))));
 				if(subResLst.isEmpty()) break;
 				result.addAll(subResLst);
 			}
