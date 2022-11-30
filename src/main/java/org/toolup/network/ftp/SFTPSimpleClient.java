@@ -1,8 +1,12 @@
 package org.toolup.network.ftp;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.toolup.network.common.JSchLogger;
@@ -41,10 +45,26 @@ public class SFTPSimpleClient {
 		}
 	}
 	
+	public String readFile(String remoteFile) throws JSchException, SftpException, IOException {
+		Session session = null;
+		ChannelSftp channel = null;
+		try {
+			session = createSession();
+			channel = (ChannelSftp) session.openChannel("sftp");
+			channel.connect();
+			
+			try(InputStream is = channel.get(remoteFile)){
+				return IOUtils.toString(is, StandardCharsets.UTF_8.name());
+			}
+		} finally {
+			if (channel != null) channel.disconnect();
+			if (session != null) session.disconnect();
+		}
+	}
+	
 	public void downloadFile(String remoteFile, String localFile) throws JSchException, SftpException {
 		Session session = null;
 		ChannelSftp channel = null;
-		
 		try {
 			session = createSession();
 			channel = (ChannelSftp) session.openChannel("sftp");
