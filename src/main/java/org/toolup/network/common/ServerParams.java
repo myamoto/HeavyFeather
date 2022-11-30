@@ -7,7 +7,7 @@ public class ServerParams {
 	private String userName;
 	
 	private String password;
-
+	public ServerParams() {}
 	public ServerParams(String hostName, String userName, String password) {
 		super();
 		this.hostName = hostName;
@@ -19,24 +19,27 @@ public class ServerParams {
 		return hostName;
 	}
 
-	public void setHostName(String hostName) {
+	public ServerParams setHostName(String hostName) {
 		this.hostName = hostName;
+		return this;
 	}
 
 	public String getUserName() {
 		return userName;
 	}
 
-	public void setUserName(String userName) {
+	public ServerParams setUserName(String userName) {
 		this.userName = userName;
+		return this;
 	}
 
 	public String getPassword() {
 		return password;
 	}
 
-	public void setPassword(String password) {
+	public ServerParams setPassword(String password) {
 		this.password = password;
+		return this;
 	}
 
 	@Override
