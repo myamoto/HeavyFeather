@@ -16,7 +16,8 @@ public class GitProject {
 	private String namespaceId;
 	
 	private List<GitProjectMemberShip> membershipList = new ArrayList<>();
-
+	private List<GitBranch> branches = new ArrayList<>();
+	
 	public String getWebUrl() {
 		return webUrl;
 	}
@@ -82,13 +83,23 @@ public class GitProject {
 		return id;
 	}
 	
+	public List<GitBranch> getBranches() {
+		return new ArrayList<>(branches);
+	}
+
+	public GitProject setBranches(List<GitBranch> branches) {
+		this.branches.clear();
+		if(branches != null) this.branches.addAll(branches);
+		return this;
+	}
+
 	public List<GitProjectMemberShip> getMembershipList() {
 		return new ArrayList<>(membershipList);
 	}
 
 	public GitProject setMembershipList(List<GitProjectMemberShip> membershipList) {
 		this.membershipList.clear();
-		this.membershipList.addAll(membershipList);
+		if(membershipList != null) this.membershipList.addAll(membershipList);
 		return this;
 	}
 

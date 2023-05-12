@@ -1,5 +1,6 @@
 package org.toolup.secu.oauth.jwt.parse;
 
+import java.security.InvalidKeyException;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.util.Hashtable;
@@ -66,25 +67,13 @@ public class JWTParserDefault extends JWTParserFactory{
 				logger.debug("parsed claims as  : {}", claims.toString());
 			}
 			StringBuilder errors = new StringBuilder();
-			long now = System.currentTimeMillis();
-			Object nbfObj = claims.get("nbf");
-//			if(nbfObj == null || !Long.class.isAssignableFrom(nbfObj.getClass()))
-//				errors.append("\nmandatory claim 'nbf' should be a long. it is of type " + nbfObj.getClass());
-
-			Object expObj = claims.get("exp");
-//			if(expObj == null || !Long.class.isAssignableFrom(expObj.getClass()))
-//				errors.append("\nmandatory claim  'exp' should be a long. it is of type " + expObj.getClass());
-
-
+			
 			Object kidObj = claims.get("kid");
 			if(kidObj != null && !String.class.isAssignableFrom(kidObj.getClass())) 
 				errors.append("\noptional 'kid' claim should be a string.");
 
 			if(!errors.toString().isEmpty())
 				throw new OAuthException("invalid JWT : " + errors.toString());
-
-			long notBefore = getTimeMillis(nbfObj);
-			long notOnOrAfter = getTimeMillis(expObj);
 
 			Signature signature = Signature.getInstance("SHA256withRSA");
 
@@ -94,27 +83,49 @@ public class JWTParserDefault extends JWTParserFactory{
 			logger.debug("signed content : {}", token12);
 			logger.debug("signature : {}", token3);
 			logger.debug("public key : {}", publicKey);
-
-			signature.initVerify(publicKey);
+			try {
+				signature.initVerify(publicKey);
+			}catch (InvalidKeyException e) {
+				logger.error("invalid public key");
+				throw e;
+				
+			}
 			signature.update(token12.getBytes(CharEncoding.UTF_8));
 
-			if ((notBefore > (now + 10000)) || (notOnOrAfter < (now - 10000))
-					|| (!signature.verify(Base64.decodeBase64(token3)))) {
+
+			long now = System.currentTimeMillis();
+			long notBefore = getTimeMillis(claims.getLong("nbf"));
+			long notOnOrAfter = getTimeMillis(claims.getLong("exp"));
+			
+			if (notBefore > (now + 10000)) {
+				throw new OAuthException("token expired #1");
+			}
+			if (notOnOrAfter < (now - 10000)) {
+				throw new OAuthException("token expired #2");
+			}
+
+			if(!signature.verify(Base64.decodeBase64(token3))) {
+				logger.debug("signature verify failed.");
 				throw new OAuthException("invalid signature");
 			}
+			
 			return new JWT()
 					.token(token)
 					.claims(claims)
 					.header(header);
-		} catch (OAuthException e) {
-			throw e;
 		} catch (Exception e) {
 			throw new OAuthException(e);
 		}
 	}
 
-	private static long getTimeMillis(final Object time) { 
-		long valLong = (time instanceof Long) ? (Long) time : new Long((Integer) time);
-		return (valLong > 99999999999L) ? valLong : valLong * 1000; }
+	private static long getTimeMillis(final long time) { return (time > 99999999999L) ? time : time * 1000; }
 
+	
+	public static void main(String[] args) throws OAuthException {
+		System.setProperty("org.toolup.secu.oauth.jwt.parse.oauthPublicKeyUrl", "https://auth-qualif.si.cnaf.info/oauth/keys");
+		String token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiJmZmQ0YzBmOC1hMjJkLTQ4MWUtODM3OC1lNzgwYmM5YTNhN2QiLCJzdWIiOiJtY29ydDc1NSIsIm5iZiI6MTY3MTc5MTE3NDQ2OCwiZG9tYWluIjoicHJpdmF0ZSIsInJvbGVzIjpbXSwic2NvcGUiOiJwdWJsaWMiLCJpc3MiOiJodHRwczovL2F1dGgtcXVhbGlmLnNpLmNuYWYuaW5mbyIsImV4cCI6MTY3MTc5MTQ4NDQ2OCwiaWF0IjoxNjcxNzkxMTg0NDY4LCJqdGkiOiI0MWQ5ODU4Ny0wZjQ2LTQwYmQtYTY3Mi03MjgyMjA4MjIyY2EifQ.m-K-yoOw7hzmD8Wam843OkmGespB07v4dETERvrjOTVNiAyjc2eEOcV3dlxZdt1wmIi7BHRv7PAtB0Pa8Jf8Hs98-qY8jGINH03X-oSQcKldSFAIcQ14cWA31ATVv9dqj0CWcpZfD5vI3I8e_GMHmkrYhU5dRq-TOedpXPzZa4oVkEFyEgYGPQGvvdz1iAGj_2O6pY1Bx3Ye13yQa1sjmW4L7Y4TUf3ZDe-jXVppXsiVumLCN5iGDzR8vxyYhS4dhEClLvZf9fVrdaOA5g6fROsuR7ycBA1O0DddnfBqy4MQW-_iVjD7F6dbR-5nCUnGcUXQ9FaAEO_RJsMiClN5_Q";
+		
+		JWTParserFactory.newInstance().parse(token);
+		
+	}
 }

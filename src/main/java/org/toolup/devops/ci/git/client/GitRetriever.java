@@ -131,7 +131,6 @@ public class GitRetriever {
 				targetRef = findRef(targetCheckoutObj);
 			}
 			logger.debug("checkout() : will call checkout('{}') from startPoint('{}').", targetCheckoutObj, followBranch);
-			
 			logger.debug("checkout : localRef objectId is '{}'", targetRef == null ? null : targetRef.getObjectId().getName());
 			logger.debug("checkout : headRef objectId is '{}'", headRef == null ? null : headRef.getObjectId().getName());
 			

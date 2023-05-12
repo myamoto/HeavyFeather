@@ -78,6 +78,10 @@ public class GitRESTClient {
 		return this;
 	}
 
+	private String getGitUrlBranches(String projectId) {
+		return String.format("%s/repository/branches", getGitUrlProjectById(projectId));
+	}
+	
 	private String getGitUrlCommits(String projectId) {
 		return String.format("%s/repository/commits", getGitUrlProjectById(projectId));
 	}
@@ -230,8 +234,11 @@ public class GitRESTClient {
 	public GitGroup retrieveGitGroup(String gitGroupFullPath, CloseableHttpClient httpClient, boolean withSubGroups, boolean withProjects) throws GITRESTClientException {
 		return retrieveGitGroup(gitGroupFullPath, httpClient, withSubGroups, withProjects, true);
 	}
-		
 	public GitGroup retrieveGitGroup(String gitGroupFullPath, CloseableHttpClient httpClient, boolean withSubGroups, boolean withProjects, boolean withProjectMemberships) throws GITRESTClientException {
+		return retrieveGitGroup(gitGroupFullPath, httpClient, withSubGroups, withProjects, withProjectMemberships, false);
+	}
+			
+	public GitGroup retrieveGitGroup(String gitGroupFullPath, CloseableHttpClient httpClient, boolean withSubGroups, boolean withProjects, boolean withProjectMemberships, boolean withBranches) throws GITRESTClientException {
 		try {
 			Object groupJsonObj = httpGETParsedJsonDocument(getGitUrlGroupById(gitGroupFullPath), httpClient);
 
@@ -242,7 +249,7 @@ public class GitRESTClient {
 			if(withProjects) {
 				List<Object> projectsObj = JsonPath.read(groupJsonObj, "$.projects");
 				for (Object jsonProj : projectsObj) {
-					result.addProject(createGitProject(jsonProj, withProjectMemberships, httpClient));
+					result.addProject(createGitProject(jsonProj, withProjectMemberships, withBranches, httpClient));
 				}
 
 				for (GitProject gitProject : result.getProjectList()) {
@@ -287,7 +294,7 @@ public class GitRESTClient {
 
 	}
 
-	private GitProject createGitProject(Object jsonProj, boolean withMemberships, CloseableHttpClient httpClient) throws GITRESTClientException, IOException {
+	private GitProject createGitProject(Object jsonProj, boolean withMemberships, boolean withBranches, CloseableHttpClient httpClient) throws GITRESTClientException, IOException {
 		if(jsonProj == null) return null;
 		List<Object> namespaceJsonObj = JsonPath.read(jsonProj, ".namespace");
 		GitProject result = new GitProject();
@@ -309,6 +316,14 @@ public class GitRESTClient {
 				result.setMembershipList(retrieveMembershipList(result.getId(), httpClient));
 			}catch(GITRESTClientException ex) {
 				logger.error("{} : membership retrieval failed : {}", ex);
+			}
+		}
+		
+		if(withBranches) {
+			try {
+				result.setBranches(retrieveGitBranches(result.getId(), 100,0, httpClient));
+			}catch(GITRESTClientException ex) {
+				logger.error("{} : branches retrieval failed : {}", ex);
 			}
 		}
 
@@ -437,7 +452,7 @@ public class GitRESTClient {
 	public String retrieveGitProjectId(String projectFullPath, CloseableHttpClient httpClient) throws GITRESTClientException {
 		try{
 			Object jsonObj = httpGETParsedJsonDocument(getGitUrlProjectById(URLEncoder.encode(projectFullPath, Consts.UTF_8.name())), httpClient);
-			GitProject p = createGitProject(jsonObj, false, httpClient);
+			GitProject p = createGitProject(jsonObj, false, false, httpClient);
 			return p == null ? null : p.getId();
 		}catch(IOException ex) {
 			throw new GITRESTClientException(ex);
@@ -445,13 +460,13 @@ public class GitRESTClient {
 	}
 	
 	public GitProject retrieveGitProject(String projectFullPath, CloseableHttpClient httpClient) throws GITRESTClientException {
-		return retrieveGitProject(projectFullPath, true, httpClient);
+		return retrieveGitProject(projectFullPath, true, true, httpClient);
 	}
 	
-	public GitProject retrieveGitProject(String projectFullPath, boolean withMemberships, CloseableHttpClient httpClient) throws GITRESTClientException {
+	public GitProject retrieveGitProject(String projectFullPath, boolean withMemberships, boolean withBranches, CloseableHttpClient httpClient) throws GITRESTClientException {
 		try{
 			Object jsonObj = httpGETParsedJsonDocument(getGitUrlProjectById(URLEncoder.encode(projectFullPath, Consts.UTF_8.name())), httpClient);
-			GitProject result = createGitProject(jsonObj, withMemberships, httpClient);
+			GitProject result = createGitProject(jsonObj, withMemberships, withBranches, httpClient);
 			return result;
 		}catch(IOException ex) {
 			throw new GITRESTClientException(ex);
@@ -493,6 +508,18 @@ public class GitRESTClient {
 		} catch (IOException ex) {
 			throw new GITRESTClientException(ex);
 		}
-		
+	}
+	
+	public List<GitBranch> retrieveGitBranches(String projectId, int limit, int offset, CloseableHttpClient httpClient) throws GITRESTClientException {
+		List<Object> branchesObj = httpGETParsedJsonDocumentPaginatedList(getGitUrlBranches(projectId), "$.[*]", limit, limit, offset, httpClient);
+		List<GitBranch> result = new ArrayList<>();
+		try {
+			for (Object branch : branchesObj) {
+				result.add(objectMapper.readValue(objectMapper.writeValueAsString(branch), GitBranch.class));
+			}
+			return result;
+		} catch (IOException ex) {
+			throw new GITRESTClientException(ex);
+		}
 	}
 }

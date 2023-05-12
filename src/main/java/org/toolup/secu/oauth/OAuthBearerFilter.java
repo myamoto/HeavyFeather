@@ -64,14 +64,16 @@ public final class OAuthBearerFilter implements Filter {
 
 			SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(new User(jwt.getSubject(), "", authorities), "", authorities));
 		} catch (OAuthException e) {
-			logger.error("{}", e.getMessage());
+			if(logger.isDebugEnabled()) {
+				logger.error("<{}>", e.getMessage());
+			}
+			if(!e.getMessage().contains("token expired"))
+				logger.error("<<{}>>", e.getMessage());
 			((HttpServletResponse) resp).sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden.");
 			return;
 		} catch (Exception e) {
 			if(logger.isDebugEnabled())  
-				logger.error("{}", e);
-			else
-				logger.error("{}", e.getMessage());
+				logger.debug("<<<{}>>>", e);
 			((HttpServletResponse) resp).sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Internal Server Error");
 			return;
 		}

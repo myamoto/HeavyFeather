@@ -9,7 +9,17 @@ public class GitRetrieverCfg {
 	private String workingDirectoryPath;
 	private String gitPersonalToken;
 	private String workspace;
+	private String branch;
 	
+	public String getBranch() {
+		return branch;
+	}
+
+	public GitRetrieverCfg branch(String branch) {
+		this.branch = branch;
+		return this;
+	}
+
 	public GitRetrieverCfg gitProjectURL(String gitProjectURL) {
 		this.gitProjectURL = gitProjectURL;
 		return this;
@@ -55,6 +65,7 @@ public class GitRetrieverCfg {
 		if(gitProjectPath.endsWith(".git"))
 			gitProjectPath = gitProjectPath.substring(0, gitProjectPath.length() - 4);
 		result.append(gitProjectPath);
+		if(branch != null) result.append("/").append(branch);
 		return result.toString();
 	}
 
@@ -85,7 +96,8 @@ public class GitRetrieverCfg {
 	public String toString() {
 		return "GitRetrieverCfg [gitlabBaseURL=" + gitlabBaseURL + ", gitProjectURL=" + gitProjectURL
 				+ ", workingDirectoryPath=" + workingDirectoryPath + ", gitPersonalToken=" + gitPersonalToken
-				+ "]";
+				+ ", workspace=" + workspace + ", branch=" + branch + "]";
 	}
 
+	
 }

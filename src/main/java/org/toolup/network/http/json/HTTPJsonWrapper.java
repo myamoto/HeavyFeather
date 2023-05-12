@@ -302,7 +302,7 @@ public class HTTPJsonWrapper {
 			String obj = httpPATCH(httpClient, param);
 			if(logger.isDebugEnabled())
 				logger.debug("patchSingle {}   -> resp : {}", param.getUrl(), objectMapper.writeValueAsString(obj));
-			if(obj == null) return null;
+			if(obj == null || obj.isEmpty()) return null;
 			return objectMapper.readValue(obj, param.getClazz());
 		}catch(IOException ex) {
 			throw new HTTPWrapperException(HTTPVERB.PATCH, param.getUrl(), ex);

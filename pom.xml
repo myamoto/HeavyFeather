@@ -12,6 +12,19 @@
 		<java.version>1.8</java.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
+	<distributionManagement>
+		<repository>
+			<id>releases</id>
+			<name>CNAF Releases Maven Repository</name>
+			<url>${repo_url}/content/repositories/maven-releases</url>
+		</repository>
+		<snapshotRepository>
+			<id>snapshots</id>
+			<name>CNAF Snapshots Maven Repository</name>
+			<url>${repo_url}/content/repositories/maven-snapshots</url>
+		</snapshotRepository>
+	</distributionManagement>
+	
 	<dependencies>
 
 		<!-- OAuth filters -->
