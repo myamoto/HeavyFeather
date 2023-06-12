@@ -37,6 +37,7 @@ import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.config.RegistryBuilder;
+import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
@@ -46,6 +47,7 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.message.BasicNameValuePair;
@@ -525,17 +527,29 @@ public class HTTPWrapper implements IConfigurable<HTTPWrapper>{
 	public static CloseableHttpClient createUnsecureSSLHttpsClient() throws HTTPWrapperException {
 		return HttpClients.custom().setConnectionManager(createUnsafeSSLHttpsConMngr()).build();
 	}
-
-	public static CloseableHttpClient createProxifiedHttpClient() {
+	
+	private static CloseableHttpClient createProxifiedHttpClient(HttpClientConnectionManager conMgr) {
 		CredentialsProvider provider = new BasicCredentialsProvider();
 		provider.setCredentials(new AuthScope(HTTPWrapper.getProxyHost()
 				, Integer.valueOf(HTTPWrapper.getProxyPort()))
 				, new UsernamePasswordCredentials(HTTPWrapper.getProxyUser()
 						, HTTPWrapper.getProxyPassword()));
-		return HttpClients.custom()
-				.setDefaultRequestConfig(RequestConfig.custom()
+		
+		HttpClientBuilder res = HttpClients.custom();
+		if(conMgr != null) {
+			res.setConnectionManager(conMgr);
+		}
+		return res.setDefaultRequestConfig(RequestConfig.custom()
 						.setCookieSpec(CookieSpecs.STANDARD).build())
 				.setDefaultCredentialsProvider(provider).build();
+	}
+
+	public static CloseableHttpClient createProxifiedHttpClient() {
+		return createProxifiedHttpClient(null);
+	}
+	
+	public static CloseableHttpClient createUnsafeProxifiedHttpClient() throws HTTPWrapperException {
+		return createProxifiedHttpClient(createUnsafeSSLHttpsConMngr());
 	}
 
 	private final class HttpReqWrapper {
