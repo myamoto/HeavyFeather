@@ -75,7 +75,7 @@ public class HTTPWrapper implements IConfigurable<HTTPWrapper>{
 	private boolean useProxy = false;
 
 	private static final List<Integer> DELETE_STATUSCODE_OK = Arrays.asList(200, 202, 204);
-	private static final List<Integer> UPDATE_STATUSCODE_OK = Arrays.asList(200, 201, 204);
+	private static final List<Integer> UPDATE_STATUSCODE_OK = Arrays.asList(200, 201, 202, 204);
 	private final static List<String> UPDATE_METHODS = Arrays.asList(HTTPVERB.PATCH, HTTPVERB.PUT, HTTPVERB.POST)
 			.stream()
 			.map(HTTPVERB::toString)
@@ -146,22 +146,23 @@ public class HTTPWrapper implements IConfigurable<HTTPWrapper>{
 	//PUT
 
 	public CloseableHttpResponse httpPUT(String url, CloseableHttpClient httpClient, List<? extends Header> headers) throws HTTPWrapperException {
-		return httpPUT(url, null, httpClient, headers, null);
+		return httpPUT(url, null, httpClient, headers, null, null);
 	}
 
 	public CloseableHttpResponse httpPUT(String url, InputStream bodyIS, CloseableHttpClient httpClient
-			, List<? extends Header> headers, List<NameValuePair> parameters) throws HTTPWrapperException {
+			, List<? extends Header> headers, List<NameValuePair> parameters, HttpClientContext context) throws HTTPWrapperException {
 		return httpUpdt(new HttpReqWrapper()
 				.setHttpReq(new HttpPut(url))
 				.setUrl(url)
 				.setBodyIS(bodyIS)
 				.setHeaders(headers)
-				.setParameters(parameters), httpClient);
+				.setParameters(parameters)
+				.setContext(context), httpClient);
 	}
 
 	public String httpPUTContent(String url, InputStream bodyIS, CloseableHttpClient httpClient
 			, List<? extends Header> headers, List<NameValuePair> parameters) throws HTTPWrapperException {
-		try(CloseableHttpResponse resp = httpPUT(url, bodyIS, httpClient, headers, parameters)){
+		try(CloseableHttpResponse resp = httpPUT(url, bodyIS, httpClient, headers, parameters, null)){
 			return getContentAsString(resp);
 		} catch (UnsupportedOperationException | IOException e) {
 			throw new HTTPWrapperException(HTTPVERB.PUT, url, e);
@@ -420,11 +421,11 @@ public class HTTPWrapper implements IConfigurable<HTTPWrapper>{
 	private void handleProxy(HttpRequestBase httpRequest) {
 		if(useProxy) {
 			String proxyHost = getProxyHost();
-			String proxyPort = getProxyPort();
+			int proxyPort = getProxyPort();
 			if(proxyHost != null) {
 				httpRequest.setConfig(RequestConfig.custom()
 						.setConnectionRequestTimeout(500)
-						.setProxy(new HttpHost(proxyHost, Integer.valueOf(proxyPort), "http")).build());
+						.setProxy(new HttpHost(proxyHost, proxyPort, "http")).build());
 			}
 		}
 	}
@@ -464,6 +465,7 @@ public class HTTPWrapper implements IConfigurable<HTTPWrapper>{
 
 	public static String fullUrl(String baseUrl, String params) {
 		if(params == null || params.isEmpty()) return baseUrl;
+		if(baseUrl.contains("?")) return String.format("%s&%s", baseUrl, params);
 		return String.format("%s?%s", baseUrl, params);
 	}
 
@@ -474,8 +476,8 @@ public class HTTPWrapper implements IConfigurable<HTTPWrapper>{
 	public static final String getProxyHost() {
 		return ParamLoader.load(HttpWrapperConf.PROP_PROXY_HOST);
 	}
-	public static final String getProxyPort() {
-		return ParamLoader.load(HttpWrapperConf.PROP_PROXY_PORT);
+	public static final int getProxyPort() {
+		return Integer.parseInt(ParamLoader.load(HttpWrapperConf.PROP_PROXY_PORT));
 	}
 
 	public static final String getProxyUser() {

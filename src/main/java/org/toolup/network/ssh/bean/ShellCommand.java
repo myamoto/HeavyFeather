@@ -45,6 +45,9 @@ public class ShellCommand {
 				String.join(" ", this.getArgs()));
 	}
 	
+
+	public static ShellCommand chmod() { return new ShellCommand().command("chmod"); }
+	public static ShellCommand chown() { return new ShellCommand().command("chown"); }
 	public static ShellCommand mv() { return new ShellCommand().command("mv"); }
 	public static ShellCommand cp() { return new ShellCommand().command("cp"); }
 	public static ShellCommand rm() { return new ShellCommand().command("rm"); }

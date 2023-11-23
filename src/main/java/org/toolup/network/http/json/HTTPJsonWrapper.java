@@ -2,6 +2,7 @@ package org.toolup.network.http.json;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -20,17 +21,27 @@ import org.toolup.network.http.HTTPWrapperException.HTTPVERB;
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper.Builder;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
 
 public class HTTPJsonWrapper {
 
-
-	protected static final  ObjectMapper objectMapper = new ObjectMapper();
-	static {
-		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-	}
+	/*
+	 * 20230905 : Deserialization of @JsonTypeInfo annotated type fails with missing type id even for explicit concrete subtypes 
+	 * 
+	 * https://github.com/FasterXML/jackson-databind/issues/2968
+	 * https://github.com/FasterXML/jackson-databind/issues/3853
+	 * => cowtowncoder commented on Apr 18
+	 * Correct: while the fix is in, it will only work when that MapperFeature ^^^ is explicitly DISABLED (is enabled by default).
+	 * 
+	 */
+	public static final  ObjectMapper objectMapper = createOM();
 
 	protected final Logger logger = LoggerFactory.getLogger(HTTPJsonWrapper.class);
 	protected final HTTPWrapper httpWrapper = new HTTPWrapper();
@@ -45,6 +56,26 @@ public class HTTPJsonWrapper {
 	
 	public HTTPJsonWrapper() {
 		defaultHeaders = new ArrayList<Header>();
+	}
+	
+	/**
+     * Bug Spring / Jackson + Jersey : 
+     * - https://github.com/eclipse-ee4j/jersey/issues/4130 
+     *   "Using SecurityEntityFilteringFeature with Jackson Databind results in "Cannot resolve PropertyFilter with id..." exceptions"
+     * - https://github.com/FasterXML/jackson-databind/issues/2293 
+     * "SerializerProvider has no FilterProvider but retrieves a BeanSerializer that has a non null _propertyFilterId"
+     * => using this workaround : https://stackoverflow.com/a/27512905
+     */
+	public static Builder createOMBldr() {
+		return JsonMapper
+			    .builder()
+			    .filterProvider(new SimpleFilterProvider().setFailOnUnknownId(false))
+			    .disable(MapperFeature.REQUIRE_TYPE_ID_FOR_SUBTYPES)
+			    .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+	}
+	
+	public static ObjectMapper createOM() {
+		return createOMBldr().build();
 	}
 	
 	public HTTPJsonWrapper limitMaxVal(int limitMaxVal) {
@@ -105,7 +136,7 @@ public class HTTPJsonWrapper {
 
 	public <T> T readSingle(CloseableHttpClient httpClient, HttpReqParam<T> param) throws HTTPWrapperException {
 		if(param == null) return null;
-		String url = param.getUrl();
+		String url = param.getReqParams() == null ? param.getUrl() : HTTPWrapper.fullUrl(param.getUrl(), HTTPWrapper.queryParams(param.getReqParamsArr()));
 		try {
 			if(logger.isDebugEnabled())
 				logger.debug("readSingle {}   -> ...", url);
@@ -131,7 +162,7 @@ public class HTTPJsonWrapper {
 			if(obj == null) return result;
 			List<Object> res = JsonPath.read(obj, jsonPath);
 			for (Object o : res) {
-				if(logger.isTraceEnabled()) logger.trace("  -> {}", objectMapper.writeValueAsString(o));
+				if(logger.isDebugEnabled()) logger.debug("  -> {}", objectMapper.writeValueAsString(o));
 				result.add(objectMapper.readValue(objectMapper.writeValueAsString(o), param.getClazz()));
 			}
 			return result;
@@ -149,8 +180,12 @@ public class HTTPJsonWrapper {
 		HTTPJsonListResponse<T> r = readListResp(httpClient, param, jsonPath);
 		return r == null ? null : r.getList();
 	}
-
+	
 	public <T> List<T> readAll(CloseableHttpClient httpClient, HttpReqParam<T> param) throws HTTPWrapperException{
+		return readAll(httpClient, param, null);
+	}
+	
+	public <T> List<T> readAll(CloseableHttpClient httpClient, HttpReqParam<T> param, String jsonPath) throws HTTPWrapperException{
 		if(param == null) return null;
 		String urlBase = param.getUrl();
 		try {
@@ -160,9 +195,10 @@ public class HTTPJsonWrapper {
 			int limit = limitMaxVal;
 			for(int i= 0 ; ; ++i) {
 				int offset = limit * i;
-
-				List<T> subResLst = readList(httpClient, param.clone()
-						.setUrl(HTTPWrapper.fullUrl(urlBase, httpWrapper.httpGetListParams(limit, offset, limitParamName, offsetParamName, param.getReqParamsArr()))));
+				
+				HttpReqParam<T> newP = param.clone()
+						.setUrl(HTTPWrapper.fullUrl(urlBase, httpWrapper.httpGetListParams(limit, offset, getLimitParamName(), offsetParamName, param.getReqParamsArr())));
+				List<T> subResLst = jsonPath == null ? readList(httpClient, newP) : readList(httpClient, newP, jsonPath);
 				if(subResLst.isEmpty()) break;
 				result.addAll(subResLst);
 			}
@@ -221,12 +257,18 @@ public class HTTPJsonWrapper {
 		String url = param.getUrl();
 		String objectValue = null;
 		try {
-			if(logger.isDebugEnabled())
-				logger.debug("postSingle {}   -> req-body : {}", param.getUrl(), objectMapper.writeValueAsString(param.getBody()));
+			
+			InputStream body = param.getBody() == null || param.getBody() instanceof InputStream ? 
+					(InputStream)param.getBody() : IOUtils.toInputStream(objectMapper.writeValueAsString(param.getBody()), "utf-8");
+			if(logger.isDebugEnabled()) {
+				logger.debug("postSingle {}   -> req-body : {}", param.getUrl(), body == null ? null : IOUtils.toString(body, Charset.forName("utf-8")));
+				
+			}
 			objectValue = httpPOST(httpClient, param);
-			if(logger.isDebugEnabled())
+			if(logger.isDebugEnabled()) {
 				logger.debug("postSingle {}   -> resp : {}", url, objectValue);
-			if(objectValue == null) return null;
+			}
+			if(objectValue == null || objectValue.isEmpty() || param.getClazz() == String.class) return (T)objectValue;
 			return objectMapper.readValue(objectValue, param.getClazz());
 		}catch(IOException ex) {
 			throw new HTTPWrapperException(HTTPVERB.POST, url , ex,  String.format("postSingle : val = %s", objectValue));
@@ -262,25 +304,37 @@ public class HTTPJsonWrapper {
 	public <T> T putSingle(CloseableHttpClient httpClient, HttpReqParam<T> param) throws HTTPWrapperException {
 
 		try {
-			if(logger.isDebugEnabled())
-				logger.debug("putSingle {}   -> req-body : {}", param.getUrl(), objectMapper.writeValueAsString(param.getBody()));
+			InputStream body = param.getBody() == null || param.getBody() instanceof InputStream ? 
+					(InputStream)param.getBody() : IOUtils.toInputStream(objectMapper.writeValueAsString(param.getBody()), "utf-8");
+			if(logger.isDebugEnabled()) {
+				logger.debug("putSingle {}   -> req-body : {}", param.getUrl(), IOUtils.toString(body, Charset.forName("utf-8")));
+			}
 			String obj = httpPUT(httpClient, param);
 			if(logger.isDebugEnabled())
 				logger.debug("putSingle {}   -> resp : {}", param.getUrl(), objectMapper.writeValueAsString(obj));
-			if(obj == null) return null;
+			if(obj == null || obj.isEmpty()) return null;
 			return objectMapper.readValue(obj, param.getClazz());
 		}catch(IOException ex) {
-			throw new HTTPWrapperException(HTTPVERB.PATCH, param.getUrl(), ex);
+			throw new HTTPWrapperException(HTTPVERB.PUT, param.getUrl(), ex);
 		}
 	}
+	
+	public CloseableHttpResponse httpPUTRaw(String url, InputStream bodyIS, CloseableHttpClient httpClient
+			, List<? extends Header> headers, List<NameValuePair> parameters) throws HTTPWrapperException {
+		return httpWrapper.httpPUT(url, bodyIS, httpClient, getHeaders(headers.toArray(new Header[headers.size()])), parameters, null);
+	}
+	
 
 	public <T> String httpPUT(CloseableHttpClient httpClient, HttpReqParam<T> param) throws HTTPWrapperException {
 		if(param == null) return null;
 		String url = param.getUrl();
 		try {
-			InputStream body = param.getBody() == null ? null : IOUtils.toInputStream(objectMapper.writeValueAsString(param.getBody()), "utf-8");
-			if(logger.isDebugEnabled())
-				logger.debug("httpPUT {}   -> req-body : {}", param.getUrl(), objectMapper.writeValueAsString(param.getBody()));
+			InputStream body = param.getBody() == null || param.getBody() instanceof InputStream ? 
+					(InputStream)param.getBody() : IOUtils.toInputStream(objectMapper.writeValueAsString(param.getBody()), "utf-8");
+			
+			if(logger.isDebugEnabled()) {
+				logger.debug("httpPUT {}   -> req-body : {}", param.getUrl(), IOUtils.toString(body, Charset.forName("utf-8")));
+			}
 			String result = httpWrapper.httpPUTContent(url, body , httpClient, getHeaders(param.getHeadersArr()), null);
 			if(logger.isDebugEnabled())
 				logger.debug("httpPUT {}   -> resp : {}", param.getUrl(), result);
