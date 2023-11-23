@@ -9,6 +9,7 @@ import java.util.List;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
+import org.apache.http.HttpEntity;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -258,10 +259,18 @@ public class HTTPJsonWrapper {
 		String objectValue = null;
 		try {
 			
-			InputStream body = param.getBody() == null || param.getBody() instanceof InputStream ? 
-					(InputStream)param.getBody() : IOUtils.toInputStream(objectMapper.writeValueAsString(param.getBody()), "utf-8");
 			if(logger.isDebugEnabled()) {
-				logger.debug("postSingle {}   -> req-body : {}", param.getUrl(), body == null ? null : IOUtils.toString(body, Charset.forName("utf-8")));
+				String bodyStr;
+				if(param.getBody() instanceof InputStream) {
+					bodyStr = IOUtils.toString((InputStream)param.getBody(), Charset.forName("utf-8"));
+				}else {
+					try {
+						bodyStr = IOUtils.toString(IOUtils.toInputStream(objectMapper.writeValueAsString(param.getBody()), "utf-8"), "utf-8");
+					}catch (Exception ex) {
+						bodyStr = param.getBody().toString();
+					}
+				}
+				logger.debug("postSingle {}   -> req-body : {}", param.getUrl(), bodyStr);
 				
 			}
 			objectValue = httpPOST(httpClient, param);
@@ -280,7 +289,9 @@ public class HTTPJsonWrapper {
 		Object body = param.getBody();
 		try {
 			return httpWrapper.httpPOSTParsedJson(param.getUrl()
-					, body == null ? null : IOUtils.toInputStream(writeValueAsString(body), "utf-8")
+					, body == null ? null :
+						body instanceof HttpEntity ? ((HttpEntity)body).getContent() :
+						IOUtils.toInputStream(writeValueAsString(body), "utf-8")
 							, httpClient
 							, getHeaders(param.getHeadersArr())
 							, param.getReqParams()

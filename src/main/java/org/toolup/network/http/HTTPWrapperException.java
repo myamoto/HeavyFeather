@@ -14,7 +14,7 @@ public class HTTPWrapperException extends AbstractHttpException{
 
 	public enum HTTPVERB{GET, POST, DELETE, PATCH, PUT;
 
-	static HTTPVERB from(String method) {
+		public static  HTTPVERB from(String method) {
 		return HTTPVERB.valueOf(method.toUpperCase());
 	}
 	}
