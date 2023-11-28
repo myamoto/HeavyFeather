@@ -9,6 +9,7 @@
 	<version>1.0.0</version>
 	<packaging>jar</packaging>
 	<properties>
+		<repo_url>http://nexus.intra.cnaf</repo_url>
 		<maven.compiler.release>17</maven.compiler.release>
 		<maven.compiler.target>17</maven.compiler.target>
 		<maven.compiler.source>17</maven.compiler.source>
@@ -19,12 +20,12 @@
 		<repository>
 			<id>releases</id>
 			<name>CNAF Releases Maven Repository</name>
-			<url>${repo_url}/content/repositories/maven-releases</url>
+			<url>${repo_url}/repository/maven-releases</url>
 		</repository>
 		<snapshotRepository>
 			<id>snapshots</id>
 			<name>CNAF Snapshots Maven Repository</name>
-			<url>${repo_url}/content/repositories/maven-snapshots</url>
+			<url>${repo_url}/repository/maven-snapshots</url>
 		</snapshotRepository>
 	</distributionManagement>
 	
