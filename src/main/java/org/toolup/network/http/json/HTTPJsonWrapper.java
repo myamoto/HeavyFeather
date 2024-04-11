@@ -2,7 +2,6 @@ package org.toolup.network.http.json;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -24,7 +23,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper.Builder;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
@@ -72,7 +71,8 @@ public class HTTPJsonWrapper {
 			    .builder()
 			    .filterProvider(new SimpleFilterProvider().setFailOnUnknownId(false))
 			    .disable(MapperFeature.REQUIRE_TYPE_ID_FOR_SUBTYPES)
-			    .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+			    .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+			    .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
 	}
 	
 	public static ObjectMapper createOM() {
@@ -259,24 +259,7 @@ public class HTTPJsonWrapper {
 		String objectValue = null;
 		try {
 			
-			if(logger.isDebugEnabled()) {
-				String bodyStr;
-				if(param.getBody() instanceof InputStream) {
-					bodyStr = IOUtils.toString((InputStream)param.getBody(), Charset.forName("utf-8"));
-				}else {
-					try {
-						bodyStr = IOUtils.toString(IOUtils.toInputStream(objectMapper.writeValueAsString(param.getBody()), "utf-8"), "utf-8");
-					}catch (Exception ex) {
-						bodyStr = param.getBody().toString();
-					}
-				}
-				logger.debug("postSingle {}   -> req-body : {}", param.getUrl(), bodyStr);
-				
-			}
 			objectValue = httpPOST(httpClient, param);
-			if(logger.isDebugEnabled()) {
-				logger.debug("postSingle {}   -> resp : {}", url, objectValue);
-			}
 			if(objectValue == null || objectValue.isEmpty() || param.getClazz() == String.class) return (T)objectValue;
 			return objectMapper.readValue(objectValue, param.getClazz());
 		}catch(IOException ex) {
@@ -288,7 +271,9 @@ public class HTTPJsonWrapper {
 		if(param == null) return null;
 		Object body = param.getBody();
 		try {
-			return httpWrapper.httpPOSTParsedJson(param.getUrl()
+			if(logger.isDebugEnabled())
+				logger.debug("httpPUT {}   -> req-body : {}", param.getUrl(), objectMapper.writeValueAsString(param.getBody()));
+			String result = httpWrapper.httpPOSTParsedJson(param.getUrl()
 					, body == null ? null :
 						body instanceof HttpEntity ? ((HttpEntity)body).getContent() :
 						IOUtils.toInputStream(writeValueAsString(body), "utf-8")
@@ -297,6 +282,9 @@ public class HTTPJsonWrapper {
 							, param.getReqParams()
 							, param.getHttpClContext()
 							, param.getContentType());
+			if(logger.isDebugEnabled())
+				logger.debug("httpPUT {}   -> resp : {}", param.getUrl(), result);
+			return result;
 		} catch(HTTPWrapperException e) {
 			handleSecurityException(e);
 		} catch (IOException ex) {
@@ -315,14 +303,7 @@ public class HTTPJsonWrapper {
 	public <T> T putSingle(CloseableHttpClient httpClient, HttpReqParam<T> param) throws HTTPWrapperException {
 
 		try {
-			InputStream body = param.getBody() == null || param.getBody() instanceof InputStream ? 
-					(InputStream)param.getBody() : IOUtils.toInputStream(objectMapper.writeValueAsString(param.getBody()), "utf-8");
-			if(logger.isDebugEnabled()) {
-				logger.debug("putSingle {}   -> req-body : {}", param.getUrl(), IOUtils.toString(body, Charset.forName("utf-8")));
-			}
 			String obj = httpPUT(httpClient, param);
-			if(logger.isDebugEnabled())
-				logger.debug("putSingle {}   -> resp : {}", param.getUrl(), objectMapper.writeValueAsString(obj));
 			if(obj == null || obj.isEmpty()) return null;
 			return objectMapper.readValue(obj, param.getClazz());
 		}catch(IOException ex) {
@@ -343,9 +324,8 @@ public class HTTPJsonWrapper {
 			InputStream body = param.getBody() == null || param.getBody() instanceof InputStream ? 
 					(InputStream)param.getBody() : IOUtils.toInputStream(objectMapper.writeValueAsString(param.getBody()), "utf-8");
 			
-			if(logger.isDebugEnabled()) {
-				logger.debug("httpPUT {}   -> req-body : {}", param.getUrl(), IOUtils.toString(body, Charset.forName("utf-8")));
-			}
+			if(logger.isDebugEnabled())
+				logger.debug("httpPUT {}   -> req-body : {}", param.getUrl(), objectMapper.writeValueAsString(param.getBody()));
 			String result = httpWrapper.httpPUTContent(url, body , httpClient, getHeaders(param.getHeadersArr()), null);
 			if(logger.isDebugEnabled())
 				logger.debug("httpPUT {}   -> resp : {}", param.getUrl(), result);

@@ -23,6 +23,14 @@ public class PropertiesUtils {
 		if(!props.containsKey(key))throw new PropertiesUtilsException(String.format("mandatory boolean property not found : %s", key));
 		return Boolean.parseBoolean(props.getProperty(key));
 	}
+	
+	public static boolean getBool(Properties props, String key) throws PropertiesUtilsException {
+		if(!props.containsKey(key)) {
+			logger.warn(String.format("warning : Boolean property not found : %s, defaulting to 'false'", key));
+			return false;
+		}
+		return Boolean.parseBoolean(props.getProperty(key));
+	}
 
 	public static String getMandatoryString(Properties props, String key) throws PropertiesUtilsException {
 		if(!props.containsKey(key))throw new PropertiesUtilsException(String.format("mandatory String property not found : %s", key));

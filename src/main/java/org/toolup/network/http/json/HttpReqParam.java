@@ -1,5 +1,6 @@
 package org.toolup.network.http.json;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.http.Header;
@@ -40,6 +41,12 @@ public class HttpReqParam <T>{
 	}
 	public HttpReqParam<T> setReqParams(List<NameValuePair> reqParams) {
 		this.reqParams = reqParams;
+		return this;
+	}
+	public HttpReqParam<T> addReqParams(NameValuePair reqParam) {
+		if(this.reqParams == null) 
+			this.reqParams = new ArrayList<>();
+		this.reqParams.add(reqParam);
 		return this;
 	}
 	
