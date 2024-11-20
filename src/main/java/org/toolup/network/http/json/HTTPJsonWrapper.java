@@ -219,7 +219,10 @@ public class HTTPJsonWrapper {
 		try {
 			return httpWrapper.httpGETParsedJson(url, httpClient, defaultHeaders);
 		} catch(HTTPWrapperException e) {
-			if(e.getStatusCode() == 404) return null;
+			if(e.getStatusCode() == 404) {
+				logger.debug("{} => 404 - {}", url, e.getxError());
+				return null;
+			}
 			handleSecurityException(e);
 		}
 		return null;
