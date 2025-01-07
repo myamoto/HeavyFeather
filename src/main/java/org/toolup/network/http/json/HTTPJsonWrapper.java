@@ -220,7 +220,7 @@ public class HTTPJsonWrapper {
 			return httpWrapper.httpGETParsedJson(url, httpClient, defaultHeaders);
 		} catch(HTTPWrapperException e) {
 			if(e.getStatusCode() == 404) {
-				logger.debug("{} => 404 - {}", url, e.getxError());
+				logger.error("{} => 404 - {}", url, e.getResponseContent());
 				return null;
 			}
 			handleSecurityException(e);

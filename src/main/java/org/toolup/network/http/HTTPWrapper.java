@@ -17,6 +17,7 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
@@ -398,11 +399,20 @@ public class HTTPWrapper implements IConfigurable<HTTPWrapper>{
 			}
 			String xError = result.containsHeader("X-Error") ? result.getFirstHeader("X-Error").getValue() : null;
 			if(logger.isDebugEnabled())
-				logger.debug("httpget Exception 'invalid HTTP Status' : {} -> {} {} {}"
+				logger.debug("httpget Exception 'invalid HTTP Status' : {} -> {}\n"
+						+ "resp.content :{}\n"
+						+ "resp.xError :{}\n"
+						+ "req.hdrs :{}"
 						, url
 						, status
-						, content
-						, xError == null ? "" : ", xError : " + xError);
+						, content == null || content.isBlank() ? "" : "\n  " + content
+						, xError == null || xError.isBlank() ? "" : "\n  " + xError
+						, headers == null || headers.isEmpty() ? "" : 
+							"\n  -" + StringUtils.join(headers
+								.stream()
+								.map(h -> String.format("%s:%s",h.getName(), h.getValue())), "\n  -")
+								
+						);
 
 			throw new HTTPWrapperException(HTTPVERB.GET, xError, status, url, content);
 		}
