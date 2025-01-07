@@ -141,7 +141,7 @@ public class HTTPJsonWrapper {
 		try {
 			if(logger.isDebugEnabled())
 				logger.debug("readSingle {}   -> ...", url);
-			Object obj = httpGETParsedJsonDocument(url, httpClient);
+			Object obj = httpGETParsedJsonDocument(url, httpClient, param.getHeadersArr());
 			if(logger.isDebugEnabled())
 				logger.debug("readSingle {}   -> {}", url, objectMapper.writeValueAsString(obj));
 			if(obj == null) return null;
@@ -156,7 +156,7 @@ public class HTTPJsonWrapper {
 		if(param == null) return null;
 		String url = param.getUrl();
 		if(logger.isDebugEnabled()) logger.debug("readList {}...", url);
-		try (CloseableHttpResponse resp = httpWrapper.httpget(url, httpClient, defaultHeaders)){
+		try (CloseableHttpResponse resp = httpWrapper.httpget(url, httpClient, getHeaders(param.getHeadersArr()))){
 			Object obj = Configuration.defaultConfiguration().jsonProvider().parse(httpWrapper.getContentAsString(resp));
 			HTTPJsonListResponse<T> result = new HTTPJsonListResponse<T>()
 					.setHeaders(Arrays.asList(resp.getAllHeaders()));
@@ -212,12 +212,12 @@ public class HTTPJsonWrapper {
 	
 	
 	public byte[] httpGetRaw(CloseableHttpClient httpClient, HttpReqParam<?> param) throws HTTPWrapperException {
-		return httpWrapper.httpGetRaw(param.getUrl(), httpClient, defaultHeaders, null);
+		return httpWrapper.httpGetRaw(param.getUrl(), httpClient, getHeaders(param.getHeadersArr()), null);
 	}
 	
-	public Object httpGETParsedJsonDocument(String url, CloseableHttpClient httpClient) throws HTTPWrapperException {
+	public Object httpGETParsedJsonDocument(String url, CloseableHttpClient httpClient, Header... headers) throws HTTPWrapperException {
 		try {
-			return httpWrapper.httpGETParsedJson(url, httpClient, defaultHeaders);
+			return httpWrapper.httpGETParsedJson(url, httpClient, getHeaders(headers));
 		} catch(HTTPWrapperException e) {
 			if(e.getStatusCode() == 404) {
 				logger.error("{} => 404 - {}", url, e.getResponseContent());

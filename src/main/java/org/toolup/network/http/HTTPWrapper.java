@@ -277,13 +277,16 @@ public class HTTPWrapper implements IConfigurable<HTTPWrapper>{
 									
 							);
 
-				throw new HTTPWrapperException(
-						HTTPVERB.from(httpReq.getMethod())
+				throw new HTTPWrapperException(headers
+						, HTTPVERB.from(httpReq.getMethod())
 						, xError
 						, status
 						, url
 						, content
+						, null
+						, null
 						, result.getAllHeaders());
+				
 			}
 			if(logger.isDebugEnabled())
 				logger.debug("{} OK on {} -> {}", httpReq.getMethod(), url, status);
@@ -422,7 +425,15 @@ public class HTTPWrapper implements IConfigurable<HTTPWrapper>{
 								
 						);
 
-			throw new HTTPWrapperException(HTTPVERB.GET, xError, status, url, content);
+			throw new HTTPWrapperException(headers
+					, HTTPVERB.GET
+					, xError
+					, status
+					, url
+					, content
+					, null
+					, null
+					, result.getAllHeaders());
 		}
 		if(logger.isDebugEnabled())
 			logger.debug("{} OK on {} -> {}", httpGet.getMethod(), url, status);
