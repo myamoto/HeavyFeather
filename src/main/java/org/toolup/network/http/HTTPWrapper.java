@@ -262,12 +262,20 @@ public class HTTPWrapper implements IConfigurable<HTTPWrapper>{
 
 				String xError = result.containsHeader("X-Error") ? result.getFirstHeader("X-Error").getValue() : null;
 				if(logger.isDebugEnabled())
-					logger.debug("{} Exception 'invalid HTTP Status' : {} -> {} {} {}"
-							, httpReq.getMethod()
+					logger.debug("httpget Exception 'invalid HTTP Status' : {} -> {}\n"
+							+ "resp.content :{}\n"
+							+ "resp.xError :{}\n"
+							+ "req.hdrs :{}"
 							, url
 							, status
-							, content
-							, xError == null ? "" : ", xError : " + xError);
+							, content == null || content.isBlank() ? "" : "\n  " + content
+							, xError == null || xError.isBlank() ? "" : "\n  " + xError
+							, headers == null || headers.isEmpty() ? "" : 
+								"\n  -" + StringUtils.join(headers
+									.stream()
+									.map(h -> String.format("%s:%s",h.getName(), h.getValue())), "\n  -")
+									
+							);
 
 				throw new HTTPWrapperException(
 						HTTPVERB.from(httpReq.getMethod())
