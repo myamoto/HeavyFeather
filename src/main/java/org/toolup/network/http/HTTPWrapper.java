@@ -64,6 +64,8 @@ import org.toolup.network.http.json.HTTPJsonWrapper;
 import com.jayway.jsonpath.Configuration;
 
 public class HTTPWrapper implements IConfigurable<HTTPWrapper>{
+	
+	public final static String AUTHORIZATION_HEADER = "Authorization";
 
 	private final static HTTPWrapper defaultInstance = new HTTPWrapper();
 

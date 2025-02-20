@@ -275,7 +275,7 @@ public class HTTPJsonWrapper {
 		Object body = param.getBody();
 		try {
 			if(logger.isDebugEnabled())
-				logger.debug("httpPUT {}   -> req-body : {}", param.getUrl(), objectMapper.writeValueAsString(param.getBody()));
+				logger.debug("httpPOST {}   -> req-body : {}", param.getUrl(), objectMapper.writeValueAsString(param.getBody()));
 			String result = httpWrapper.httpPOSTParsedJson(param.getUrl()
 					, body == null ? null :
 						body instanceof HttpEntity ? ((HttpEntity)body).getContent() :
@@ -286,7 +286,7 @@ public class HTTPJsonWrapper {
 							, param.getHttpClContext()
 							, param.getContentType());
 			if(logger.isDebugEnabled())
-				logger.debug("httpPUT {}   -> resp : {}", param.getUrl(), result);
+				logger.debug("httpPOST {}   -> resp : {}", param.getUrl(), result);
 			return result;
 		} catch(HTTPWrapperException e) {
 			handleSecurityException(e);
