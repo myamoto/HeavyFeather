@@ -58,6 +58,10 @@ public class HTTPJsonWrapper {
 		defaultHeaders = new ArrayList<Header>();
 	}
 	
+	public void setUseProxy(boolean useProxy) {
+		this.httpWrapper.useProxy(useProxy);
+	}
+	
 	/**
      * Bug Spring / Jackson + Jersey : 
      * - https://github.com/eclipse-ee4j/jersey/issues/4130 
