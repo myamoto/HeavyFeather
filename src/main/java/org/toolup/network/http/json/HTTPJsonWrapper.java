@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import org.toolup.network.http.HTTPWrapper;
 import org.toolup.network.http.HTTPWrapperException;
 import org.toolup.network.http.HTTPWrapperException.HTTPVERB;
+import org.toolup.network.http.HttpResp;
 
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -242,7 +243,7 @@ public class HTTPJsonWrapper {
 		try {
 			if(logger.isDebugEnabled())
 				logger.debug("postList {}   -> req-body : {}", param.getUrl(), objectMapper.writeValueAsString(param.getBody()));
-			String resp = httpPOST(httpClient, param);
+			String resp = httpPOST(httpClient, param).getContent();
 			if(logger.isDebugEnabled())
 				logger.debug("postList {} -> resp : {}", url, resp);
 			List<T> result = new ArrayList<>();
@@ -260,27 +261,34 @@ public class HTTPJsonWrapper {
 			throw new HTTPWrapperException(HTTPVERB.POST, url, ex);
 		}
 	}
-
+	
 	public <T> T postSingle(CloseableHttpClient httpClient, HttpReqParam<T> param) throws HTTPWrapperException {
+		return postSingleW(httpClient, param).getEntityResp();
+	}	
+	
+	public <T> HttpRespW<T> postSingleW(CloseableHttpClient httpClient, HttpReqParam<T> param) throws HTTPWrapperException {
 		String url = param.getUrl();
 		String objectValue = null;
 		try {
-			
-			objectValue = httpPOST(httpClient, param);
-			if(objectValue == null || objectValue.isEmpty() || param.getClazz() == String.class) return (T)objectValue;
-			return objectMapper.readValue(objectValue, param.getClazz());
+			HttpResp resp = httpPOST(httpClient, param);
+			HttpRespW<T> res = new HttpRespW<T>().setResp(resp);
+			objectValue = resp.getContent();
+			if(objectValue == null || objectValue.isEmpty() || param.getClazz() == String.class)
+				return res.setEntityResp((T)objectValue);
+			return res.setEntityResp(objectMapper.readValue(objectValue, param.getClazz()));
 		}catch(IOException ex) {
 			throw new HTTPWrapperException(HTTPVERB.POST, url , ex,  String.format("postSingle : val = %s", objectValue));
 		}
 	}
 
-	public String httpPOST(CloseableHttpClient httpClient, HttpReqParam<?> param) throws HTTPWrapperException {
+	public HttpResp httpPOST(CloseableHttpClient httpClient, HttpReqParam<?> param) throws HTTPWrapperException {
 		if(param == null) return null;
 		Object body = param.getBody();
 		try {
 			if(logger.isDebugEnabled())
 				logger.debug("httpPOST {}   -> req-body : {}", param.getUrl(), objectMapper.writeValueAsString(param.getBody()));
-			String result = httpWrapper.httpPOSTParsedJson(param.getUrl()
+			
+			HttpResp result = httpWrapper.httpPOSTParsedJson(param.getUrl()
 					, body == null ? null :
 						body instanceof HttpEntity ? ((HttpEntity)body).getContent() :
 						IOUtils.toInputStream(writeValueAsString(body), "utf-8")
@@ -290,7 +298,7 @@ public class HTTPJsonWrapper {
 							, param.getHttpClContext()
 							, param.getContentType());
 			if(logger.isDebugEnabled())
-				logger.debug("httpPOST {}   -> resp : {}", param.getUrl(), result);
+				logger.debug("httpPOST {}   -> resp : {}", param.getUrl(), result.getContent());
 			return result;
 		} catch(HTTPWrapperException e) {
 			handleSecurityException(e);

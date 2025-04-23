@@ -126,7 +126,7 @@ public class HTTPWrapper implements IConfigurable<HTTPWrapper>{
 				.setContext(context), httpClient);
 	}
 
-	public String httpPOSTParsedJson(String url, InputStream bodyIS, CloseableHttpClient httpClient
+	public HttpResp httpPOSTParsedJson(String url, InputStream bodyIS, CloseableHttpClient httpClient
 			, List<? extends Header> headers, List<NameValuePair> parameters, HttpClientContext context
 			, ContentType contentType ) throws HTTPWrapperException {
 		HttpReqWrapper req = new HttpReqWrapper()
@@ -139,12 +139,16 @@ public class HTTPWrapper implements IConfigurable<HTTPWrapper>{
 				.setContentType(contentType);
 
 		try(CloseableHttpResponse resp = httpUpdt(req, httpClient)){
-			return getContentAsString(resp);
+			
+			return new HttpResp()
+					.setHeaders(Arrays.asList(resp.getAllHeaders()))
+					.setContent(getContentAsString(resp));
 		} catch (UnsupportedOperationException | IOException e) {
 			throw new HTTPWrapperException(HTTPVERB.POST, req.getUrl(), e);
 		}
 	}
-
+	
+	
 
 	//PUT
 
