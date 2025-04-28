@@ -372,7 +372,6 @@ public class HTTPWrapper implements IConfigurable<HTTPWrapper>{
 		return Configuration.defaultConfiguration().jsonProvider().parse(resp);
 	}
 
-
 	public CloseableHttpResponse httpget(String url, CloseableHttpClient httpClient, List<? extends Header> headers) throws HTTPWrapperException {
 		return httpget(url, httpClient, headers, null);
 	}
@@ -385,8 +384,6 @@ public class HTTPWrapper implements IConfigurable<HTTPWrapper>{
 		}
 	}
 		
-		
-			
 	public CloseableHttpResponse httpget(String url, CloseableHttpClient httpClient, List<? extends Header> headers, HttpClientContext context) throws HTTPWrapperException {
 		HttpGet httpGet = new HttpGet(url);
 

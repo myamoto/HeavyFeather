@@ -70,6 +70,10 @@ public class HTTPJsonListResponse<T> {
 	public String toString() {
 		return "HTTPJsonListResponse [list=" + list + ", headers=" + headers + "]";
 	}
+
+	public T getFirstVal() {
+		return list.isEmpty() ? null : list.get(0);
+	}
 	
 
 }
