@@ -140,17 +140,19 @@ public class HTTPJsonWrapper {
 	
 	// GET
 	public <T> T readSingle(CloseableHttpClient httpClient, HttpReqParam<T> param) throws HTTPWrapperException {
-		return readSingleResp(httpClient, param).getFirstVal();
+		HTTPJsonListResponse<T> r = readSingleResp(httpClient, param);
+		return r == null ? null : r.getFirstVal();
 	}
 
 	public <T> HTTPJsonListResponse<T> readSingleResp(CloseableHttpClient httpClient, HttpReqParam<T> param) throws HTTPWrapperException {
-		if(param == null) return null;
+		HTTPJsonListResponse<T> result = new HTTPJsonListResponse<>();
+		if(param == null) return result;
 		String url = param.getReqParams() == null ? param.getUrl() : HTTPWrapper.fullUrl(param.getUrl(), HTTPWrapper.queryParams(param.getReqParamsArr()));
 		try {
 			if(logger.isDebugEnabled())
 				logger.debug("readSingle {}   -> ...", url);
 			
-			HTTPJsonListResponse<T> result = new HTTPJsonListResponse<>();
+			
 			try(CloseableHttpResponse resp = httpWrapper.httpget(url, httpClient, getHeaders(param.getHeadersArr()))){
 				String content = httpWrapper.getContentAsString(resp);
 				Object obj = Configuration.defaultConfiguration().jsonProvider().parse(content);
