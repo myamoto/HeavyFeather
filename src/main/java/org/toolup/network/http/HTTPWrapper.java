@@ -563,6 +563,10 @@ public class HTTPWrapper implements IConfigurable<HTTPWrapper>{
 	}
 	
 	private static CloseableHttpClient createProxifiedHttpClient(HttpClientConnectionManager conMgr) {
+		return createProxifiedHttpClientBuilder(conMgr).build();
+	}
+	
+	public static HttpClientBuilder createProxifiedHttpClientBuilder(HttpClientConnectionManager conMgr) {
 		CredentialsProvider provider = new BasicCredentialsProvider();
 		provider.setCredentials(new AuthScope(HTTPWrapper.getProxyHost()
 				, Integer.valueOf(HTTPWrapper.getProxyPort()))
@@ -573,9 +577,8 @@ public class HTTPWrapper implements IConfigurable<HTTPWrapper>{
 		if(conMgr != null) {
 			res.setConnectionManager(conMgr);
 		}
-		return res.setDefaultRequestConfig(RequestConfig.custom()
-						.setCookieSpec(CookieSpecs.STANDARD).build())
-				.setDefaultCredentialsProvider(provider).build();
+		return res.setDefaultRequestConfig(RequestConfig.custom().setCookieSpec(CookieSpecs.STANDARD).build())
+				.setDefaultCredentialsProvider(provider);
 	}
 
 	public static CloseableHttpClient createProxifiedHttpClient() {
