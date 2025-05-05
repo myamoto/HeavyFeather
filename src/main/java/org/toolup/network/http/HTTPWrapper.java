@@ -50,6 +50,7 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.DefaultProxyRoutePlanner;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.ssl.SSLContexts;
@@ -563,17 +564,21 @@ public class HTTPWrapper implements IConfigurable<HTTPWrapper>{
 	}
 	
 	private static CloseableHttpClient createProxifiedHttpClient(HttpClientConnectionManager conMgr) {
-		return createProxifiedHttpClientBuilder(conMgr).build();
+		CloseableHttpClient r = createProxifiedHttpClientBuilder(conMgr).build();
+		return r;
 	}
 	
 	public static HttpClientBuilder createProxifiedHttpClientBuilder(HttpClientConnectionManager conMgr) {
 		CredentialsProvider provider = new BasicCredentialsProvider();
-		provider.setCredentials(new AuthScope(HTTPWrapper.getProxyHost()
-				, Integer.valueOf(HTTPWrapper.getProxyPort()))
+		provider.setCredentials(new AuthScope(HTTPWrapper.getProxyHost() , Integer.valueOf(HTTPWrapper.getProxyPort()))
 				, new UsernamePasswordCredentials(HTTPWrapper.getProxyUser()
 						, HTTPWrapper.getProxyPassword()));
 		
-		HttpClientBuilder res = HttpClients.custom();
+		HttpHost proxy = new HttpHost(HTTPWrapper.getProxyHost(), HTTPWrapper.getProxyPort(), "http");
+		DefaultProxyRoutePlanner routePlanner = new DefaultProxyRoutePlanner(proxy);
+		
+		HttpClientBuilder res = HttpClients.custom()
+				.setRoutePlanner(routePlanner);
 		if(conMgr != null) {
 			res.setConnectionManager(conMgr);
 		}
