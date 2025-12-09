@@ -163,7 +163,7 @@ public class HTTPJsonWrapper {
 				result.setList(Arrays.asList(objectMapper.readValue(objectMapper.writeValueAsString(obj), param.getClazz())));
 			} catch(HTTPWrapperException e) {
 				if(e.getStatusCode() == 404) {
-					logger.error("{} => 404 - {}", url, e.getResponseContent());
+					logger.warn("{} => 404 - {}", url, e.getResponseContent());
 					return null;
 				}
 				handleSecurityException(e);

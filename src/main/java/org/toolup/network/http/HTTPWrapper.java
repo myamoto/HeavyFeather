@@ -284,7 +284,8 @@ public class HTTPWrapper implements IConfigurable<HTTPWrapper>{
 									
 							);
 
-				throw new HTTPWrapperException(headers
+				throw new HTTPWrapperException(
+						new ArrayList<>()
 						, HTTPVERB.from(httpReq.getMethod())
 						, xError
 						, status
@@ -429,7 +430,8 @@ public class HTTPWrapper implements IConfigurable<HTTPWrapper>{
 								
 						);
 
-			throw new HTTPWrapperException(headers
+			throw new HTTPWrapperException(
+					new ArrayList<>()
 					, HTTPVERB.GET
 					, xError
 					, status
@@ -570,10 +572,12 @@ public class HTTPWrapper implements IConfigurable<HTTPWrapper>{
 	
 	public static HttpClientBuilder createProxifiedHttpClientBuilder(HttpClientConnectionManager conMgr) {
 		CredentialsProvider provider = new BasicCredentialsProvider();
-		provider.setCredentials(new AuthScope(HTTPWrapper.getProxyHost() , Integer.valueOf(HTTPWrapper.getProxyPort()))
+		provider.setCredentials(new AuthScope(HTTPWrapper.getProxyHost() ,Integer.valueOf(HTTPWrapper.getProxyPort()))
 				, new UsernamePasswordCredentials(HTTPWrapper.getProxyUser()
 						, HTTPWrapper.getProxyPassword()));
-		
+		/**
+		 * https://stackoverflow.com/questions/4955644/apache-httpclient-4-1-proxy-settings/49503111
+		 */
 		HttpHost proxy = new HttpHost(HTTPWrapper.getProxyHost(), HTTPWrapper.getProxyPort(), "http");
 		DefaultProxyRoutePlanner routePlanner = new DefaultProxyRoutePlanner(proxy);
 		
